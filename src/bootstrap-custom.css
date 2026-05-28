@@ -10731,3 +10731,20 @@ textarea.form-control-lg {
 }
 
 /*# sourceMappingURL=bootstrap-custom.css.map */
+body {
+    background-color: #f8f9fa;
+}
+
+.navbar {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.hero-title {
+    font-size: 60px;
+    font-weight: bold;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    transition: 0.3s;
+}

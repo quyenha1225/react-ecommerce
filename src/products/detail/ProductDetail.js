@@ -19,6 +19,7 @@ function ProductDetail() {
             <Link className="text-decoration-none link-secondary" to="/products">
               All Prodcuts
             </Link>
+            
           </li>
           <li className="breadcrumb-item">
             <a className="text-decoration-none link-secondary" href="!#">

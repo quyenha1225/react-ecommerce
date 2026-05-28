@@ -2,7 +2,7 @@ import BannerZero from "./banner-0.jpg";
 import BannerOne from "./banner-1.jpg";
 import BannerTwo from "./banner-2.jpg";
 
-function BannerIncidator(props) {
+function BannerIndicator(props) {
   return (
     <button
       type="button"
@@ -47,9 +47,9 @@ function Banner() {
       style={{ marginTop: "56px" }}
     >
       <div className="carousel-indicators">
-        <BannerIncidator index="0" active={true} />
-        <BannerIncidator index="1" />
-        <BannerIncidator index="2" />
+        <BannerIndicator index="0" active={true} />
+        <BannerIndicator index="1" />
+        <BannerIndicator index="2" />
       </div>
       <div className="carousel-inner">
         <BannerImage image={BannerZero} active={true} />
