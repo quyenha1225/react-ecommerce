@@ -1,6 +1,8 @@
 import BannerZero from "./banner-0.jpg";
 import BannerOne from "./banner-1.jpg";
 import BannerTwo from "./banner-2.jpg";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { Link } from "react-router-dom";
 
 function BannerIndicator(props) {
   return (
@@ -20,19 +22,12 @@ function BannerImage(props) {
       className={"carousel-item " + (props.active ? "active" : "")}
       data-bs-interval="5000"
     >
-      <div
-        className="ratio"
-        style={{ "--bs-aspect-ratio": "50%", maxHeight: "460px" }}
-      >
+      <div className="ratio home-banner-ratio">
         <img
           className="d-block w-100 h-100 bg-dark cover"
-          alt=""
+          alt={props.alt}
           src={props.image}
         />
-      </div>
-      <div className="carousel-caption d-none d-lg-block">
-        <h5>Banner Header</h5>
-        <p>Some representative placeholder content for the banner.</p>
       </div>
     </div>
   );
@@ -42,9 +37,8 @@ function Banner() {
   return (
     <div
       id="bannerIndicators"
-      className="carousel slide"
+      className="carousel slide home-banner"
       data-bs-ride="carousel"
-      style={{ marginTop: "56px" }}
     >
       <div className="carousel-indicators">
         <BannerIndicator index="0" active={true} />
@@ -52,10 +46,75 @@ function Banner() {
         <BannerIndicator index="2" />
       </div>
       <div className="carousel-inner">
-        <BannerImage image={BannerZero} active={true} />
-        <BannerImage image={BannerOne} />
-        <BannerImage image={BannerTwo} />
+        <BannerImage
+          image={BannerZero}
+          alt="Bộ sưu tập thiết bị công nghệ ElectroShop"
+          active={true}
+        />
+        <BannerImage image={BannerOne} alt="Laptop và phụ kiện cao cấp" />
+        <BannerImage image={BannerTwo} alt="Điện thoại và thiết bị thông minh" />
       </div>
+
+      <div className="home-banner-overlay">
+        <div className="container home-banner-content">
+          <div className="home-banner-copy">
+            <span className="home-banner-kicker">Tech deals 2026</span>
+            <h1>ElectroShop</h1>
+            <p>
+              Laptop, điện thoại và phụ kiện chính hãng với giao diện mua sắm
+              nhanh, gọn và hiện đại.
+            </p>
+            <div className="home-banner-actions">
+              <Link to="/products" className="btn btn-warning btn-lg" replace>
+                Mua ngay
+              </Link>
+              <Link
+                to="/category/laptop"
+                className="btn btn-outline-light btn-lg"
+                replace
+              >
+                Xem laptop
+              </Link>
+            </div>
+          </div>
+
+          <div className="home-banner-highlights" aria-hidden="true">
+            <div className="home-banner-highlight-card">
+              <FontAwesomeIcon icon={["fas", "bolt"]} />
+              <div>
+                <strong>Flash sale</strong>
+                <span>Giảm đến 35%</span>
+              </div>
+            </div>
+            <div className="home-banner-highlight-card">
+              <FontAwesomeIcon icon={["fas", "headset"]} />
+              <div>
+                <strong>Tư vấn 24/7</strong>
+                <span>Chọn đúng cấu hình</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <button
+        className="carousel-control-prev"
+        type="button"
+        data-bs-target="#bannerIndicators"
+        data-bs-slide="prev"
+      >
+        <span className="carousel-control-prev-icon" aria-hidden="true" />
+        <span className="visually-hidden">Trước</span>
+      </button>
+      <button
+        className="carousel-control-next"
+        type="button"
+        data-bs-target="#bannerIndicators"
+        data-bs-slide="next"
+      >
+        <span className="carousel-control-next-icon" aria-hidden="true" />
+        <span className="visually-hidden">Sau</span>
+      </button>
     </div>
   );
 }

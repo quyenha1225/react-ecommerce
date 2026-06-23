@@ -1,91 +1,204 @@
+import { Link, NavLink } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Link } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import logo from "../quyen-pc-logo.png";
 
 function Header() {
-  const [openedDrawer, setOpenedDrawer] = useState(false);
+  const [isCategoryOpen, setIsCategoryOpen] = useState(false);
+  const [isNavOpen, setIsNavOpen] = useState(false);
+  const categoryDropdownRef = useRef(null);
 
-  function toggleDrawer() {
-    setOpenedDrawer(!openedDrawer);
-  }
-
-  function changeNav(event) {
-    if (openedDrawer) {
-      setOpenedDrawer(false);
+  useEffect(() => {
+    function closeCategoryMenu(event) {
+      if (
+        categoryDropdownRef.current &&
+        !categoryDropdownRef.current.contains(event.target)
+      ) {
+        setIsCategoryOpen(false);
+      }
     }
+
+    function closeCategoryMenuOnEscape(event) {
+      if (event.key === "Escape") {
+        setIsCategoryOpen(false);
+        setIsNavOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", closeCategoryMenu);
+    document.addEventListener("keydown", closeCategoryMenuOnEscape);
+
+    return () => {
+      document.removeEventListener("mousedown", closeCategoryMenu);
+      document.removeEventListener("keydown", closeCategoryMenuOnEscape);
+    };
+  }, []);
+
+  function closeMenus() {
+    setIsCategoryOpen(false);
+    setIsNavOpen(false);
   }
+
+  const getNavLinkClassName = ({ isActive }) =>
+    isActive ? "eshop-nav-link is-active" : "eshop-nav-link";
 
   return (
-    <header>
-      <nav className="navbar fixed-top navbar-expand-lg navbar-light bg-white border-bottom">
-        <div className="container-fluid">
-          <Link className="navbar-brand" to="/" onClick={changeNav}>
-            <FontAwesomeIcon
-              icon={["fab", "bootstrap"]}
-              className="ms-1"
-              size="lg"
-            />
-            <span className="ms-2 h5 fw-bold text-primary">ElectroShop</span>
+    <header className="eshop-header">
+      <div className="eshop-topbar">
+        <div className="container-fluid eshop-header-inner">
+          <Link to="/" className="eshop-logo" aria-label="ElectroShop - Trang chủ">
+            <img className="eshop-logo-image" src={logo} alt="ElectroShop" />
           </Link>
 
-          <div className={"navbar-collapse offcanvas-collapse " + (openedDrawer ? 'open' : '')}>
-            <ul className="navbar-nav me-auto mb-lg-0">
-              <li className="nav-item">
-                <Link to="/" className="nav-link">Home</Link>
-              </li>
-              <li className="nav-item">
-                <Link to="/products" className="nav-link">Products</Link>
-              </li>
-              <li className="nav-item">
-                <Link to="/about" className="nav-link">About</Link>
-              </li>
-            </ul>
-            
-            <button type="button" className="btn btn-outline-dark me-3 d-none d-lg-inline">
-              <FontAwesomeIcon icon={["fas", "shopping-cart"]} />
-              <span className="ms-3 badge rounded-pill bg-dark">0</span>
+          <div className="eshop-search">
+            <input
+              type="text"
+              placeholder="Tìm điện thoại, laptop, phụ kiện..."
+            />
+            <button type="button" aria-label="Tìm kiếm">
+              <FontAwesomeIcon icon={["fas", "search"]} />
             </button>
-            
-            <ul className="navbar-nav mb-2 mb-lg-0">
-              <li className="nav-item dropdown">
-                <a
-                  href="#!"
-                  className="nav-link dropdown-toggle"
-                  id="userDropdown"
-                  role="button"
-                  data-bs-toggle="dropdown"
-                  aria-expanded="false"
-                >
-                  <FontAwesomeIcon icon={["fas", "user-alt"]} />
-                </a>
-                <ul
-                  className="dropdown-menu dropdown-menu-end"
-                  aria-labelledby="userDropdown"
-                >
-                  <li>
-                    <Link to="/" className="dropdown-item" onClick={changeNav}>
-                      Login
-                    </Link>
-                  </li>
-                  <li>
-                    <Link to="/" className="dropdown-item" onClick={changeNav}>
-                      Sign Up
-                    </Link>
-                  </li>
-                </ul>
-              </li>
-            </ul>
           </div>
 
-          <div className="d-inline-block d-lg-none">
-            <button type="button" className="btn btn-outline-dark">
+          <div className="eshop-actions">
+            <Link to="/about" className="eshop-action-item">
+              <FontAwesomeIcon icon={["fas", "phone-alt"]} />
+              <span>Liên hệ</span>
+            </Link>
+
+            <Link to="/cart" className="eshop-action-item">
               <FontAwesomeIcon icon={["fas", "shopping-cart"]} />
-              <span className="ms-3 badge rounded-pill bg-dark">0</span>
-            </button>
-            <button className="navbar-toggler p-0 border-0 ms-3" type="button" onClick={toggleDrawer}>
-              <span className="navbar-toggler-icon"></span>
-            </button>
+              <span>Giỏ hàng</span>
+              <b>0</b>
+            </Link>
+
+            <Link to="/login" className="eshop-user-btn">
+              <FontAwesomeIcon icon={["fas", "user-alt"]} />
+              <span>Tài khoản</span>
+            </Link>
           </div>
+
+          <button
+            type="button"
+            className="eshop-mobile-menu-btn"
+            aria-label={
+              isNavOpen ? "Đóng menu điều hướng" : "Mở menu điều hướng"
+            }
+            aria-controls="eshop-main-navigation"
+            aria-expanded={isNavOpen}
+            onClick={() => {
+              setIsNavOpen((isOpen) => !isOpen);
+              setIsCategoryOpen(false);
+            }}
+          >
+            <FontAwesomeIcon icon={["fas", isNavOpen ? "times" : "bars"]} />
+          </button>
+        </div>
+      </div>
+
+      <nav
+        id="eshop-main-navigation"
+        className={"eshop-nav " + (isNavOpen ? "is-open" : "")}
+      >
+        <div className="container eshop-nav-inner">
+          <div
+            ref={categoryDropdownRef}
+            className={
+              "eshop-category-dropdown " +
+              (isCategoryOpen ? "is-open" : "")
+            }
+          >
+            <button
+              type="button"
+              className="eshop-category-btn"
+              aria-haspopup="true"
+              aria-expanded={isCategoryOpen}
+              onClick={() => setIsCategoryOpen((isOpen) => !isOpen)}
+            >
+              <FontAwesomeIcon icon={["fas", "bars"]} />
+              <span>Danh mục</span>
+              <FontAwesomeIcon
+                icon={["fas", "chevron-down"]}
+                className="eshop-category-chevron"
+              />
+            </button>
+
+            <div className="eshop-category-menu">
+              <Link to="/products" onClick={closeMenus}>
+                <FontAwesomeIcon icon={["fas", "th-large"]} />
+                Tất cả sản phẩm
+              </Link>
+              <Link to="/category/dien-thoai" onClick={closeMenus}>
+                <FontAwesomeIcon icon={["fas", "mobile-alt"]} />
+                Điện thoại
+              </Link>
+              <Link to="/category/laptop" onClick={closeMenus}>
+                <FontAwesomeIcon icon={["fas", "laptop"]} />
+                Laptop
+              </Link>
+              <Link to="/category/phu-kien" onClick={closeMenus}>
+                <FontAwesomeIcon icon={["fas", "headphones"]} />
+                Phụ kiện
+              </Link>
+              <Link to="/category/linh-kien-pc" onClick={closeMenus}>
+                <FontAwesomeIcon icon={["fas", "microchip"]} />
+                Linh kiện PC
+              </Link>
+              <Link to="/category/man-hinh" onClick={closeMenus}>
+                <FontAwesomeIcon icon={["fas", "desktop"]} />
+                Màn hình
+              </Link>
+            </div>
+          </div>
+
+          <NavLink to="/" end className={getNavLinkClassName} onClick={closeMenus}>
+            Trang chủ
+          </NavLink>
+          <NavLink to="/products" className={getNavLinkClassName} onClick={closeMenus}>
+            Sản phẩm
+          </NavLink>
+          <NavLink
+            to="/category/laptop"
+            className={getNavLinkClassName}
+            onClick={closeMenus}
+          >
+            Laptop
+          </NavLink>
+          <NavLink
+            to="/category/dien-thoai"
+            className={getNavLinkClassName}
+            onClick={closeMenus}
+          >
+            Điện thoại
+          </NavLink>
+          <NavLink
+            to="/category/phu-kien"
+            className={getNavLinkClassName}
+            onClick={closeMenus}
+          >
+            Phụ kiện
+          </NavLink>
+          <NavLink to="/about" className={getNavLinkClassName} onClick={closeMenus}>
+            Giới thiệu
+          </NavLink>
+          <Link to="/products" className="eshop-nav-promo" onClick={closeMenus}>
+            <FontAwesomeIcon icon={["fas", "gift"]} />
+            Deal hôm nay
+          </Link>
+          <Link
+            to="/cart"
+            className="eshop-nav-mobile-link eshop-nav-link"
+            onClick={closeMenus}
+          >
+            Giỏ hàng
+          </Link>
+          <Link
+            to="/login"
+            className="eshop-nav-mobile-link eshop-nav-link"
+            onClick={closeMenus}
+          >
+            Tài khoản
+          </Link>
         </div>
       </nav>
     </header>
