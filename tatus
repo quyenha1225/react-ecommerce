@@ -1,0 +1,32 @@
+warning: in the working copy of 'build/asset-manifest.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'build/manifest.json', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'build/robots.txt', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/bootstrap-custom.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/index.css', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/landing/Banner.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/landing/FeatureProduct.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/landing/Landing.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/products/ProductList.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/template/Content.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/template/Footer.js', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/template/Header.js', LF will be replaced by CRLF the next time Git touches it
+M	build/asset-manifest.json
+M	build/index.html
+D	build/static/css/main.06f2e99b.css
+D	build/static/css/main.06f2e99b.css.map
+D	build/static/js/main.5cbf0a4f.js
+D	build/static/js/main.5cbf0a4f.js.LICENSE.txt
+D	build/static/js/main.5cbf0a4f.js.map
+D	react-ecommerce-template@1.0.0
+D	react-scripts
+M	src/App.js
+M	src/bootstrap-custom.css
+M	src/index.css
+M	src/index.js
+M	src/landing/Banner.js
+M	src/landing/FeatureProduct.js
+M	src/landing/Landing.js
+M	src/products/ProductList.js
+M	src/template/Content.js
+M	src/template/Footer.js
+M	src/template/Header.js

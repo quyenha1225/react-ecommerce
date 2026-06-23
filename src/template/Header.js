@@ -1,11 +1,14 @@
 import { Link, NavLink } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useRef, useState } from "react";
-import logo from "../quyen-pc-logo.png";
+import { getStoredCartCount } from "../utils/cartEvents";
+
+const logo = `${process.env.PUBLIC_URL}/logo/e-shop-logo.png`;
 
 function Header() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
+  const [cartCount, setCartCount] = useState(getStoredCartCount);
   const categoryDropdownRef = useRef(null);
 
   useEffect(() => {
@@ -31,6 +34,24 @@ function Header() {
     return () => {
       document.removeEventListener("mousedown", closeCategoryMenu);
       document.removeEventListener("keydown", closeCategoryMenuOnEscape);
+    };
+  }, []);
+
+  useEffect(() => {
+    function updateCartCount(event) {
+      setCartCount(event.detail?.count ?? getStoredCartCount());
+    }
+
+    function syncCartCount() {
+      setCartCount(getStoredCartCount());
+    }
+
+    window.addEventListener("eshop:cart-updated", updateCartCount);
+    window.addEventListener("storage", syncCartCount);
+
+    return () => {
+      window.removeEventListener("eshop:cart-updated", updateCartCount);
+      window.removeEventListener("storage", syncCartCount);
     };
   }, []);
 
@@ -66,10 +87,10 @@ function Header() {
               <span>Liên hệ</span>
             </Link>
 
-            <Link to="/cart" className="eshop-action-item">
+            <Link to="/cart" className="eshop-action-item eshop-cart-action">
               <FontAwesomeIcon icon={["fas", "shopping-cart"]} />
               <span>Giỏ hàng</span>
-              <b>0</b>
+              <b key={cartCount}>{cartCount}</b>
             </Link>
 
             <Link to="/login" className="eshop-user-btn">
@@ -181,24 +202,7 @@ function Header() {
           <NavLink to="/about" className={getNavLinkClassName} onClick={closeMenus}>
             Giới thiệu
           </NavLink>
-          <Link to="/products" className="eshop-nav-promo" onClick={closeMenus}>
-            <FontAwesomeIcon icon={["fas", "gift"]} />
-            Deal hôm nay
-          </Link>
-          <Link
-            to="/cart"
-            className="eshop-nav-mobile-link eshop-nav-link"
-            onClick={closeMenus}
-          >
-            Giỏ hàng
-          </Link>
-          <Link
-            to="/login"
-            className="eshop-nav-mobile-link eshop-nav-link"
-            onClick={closeMenus}
-          >
-            Tài khoản
-          </Link>
+
         </div>
       </nav>
     </header>

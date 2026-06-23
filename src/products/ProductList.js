@@ -16,6 +16,86 @@ const categories = [
 
 const brands = ["Apple", "Samsung", "Asus", "Dell", "Lenovo", "Xiaomi"];
 
+const productCatalog = [
+  {
+    name: "Nillkin iPhone X cover",
+    category: "Phụ kiện",
+    price: 10000000,
+    percentOff: 15,
+    rating: 4.8,
+    sold: "1.2k",
+  },
+  {
+    name: "Tai nghe Bluetooth Air Pro",
+    category: "Phụ kiện",
+    price: 1290000,
+    percentOff: 10,
+    rating: 4.7,
+    sold: "860",
+  },
+  {
+    name: "Laptop Gaming GTX Edition",
+    category: "Laptop",
+    price: 24990000,
+    percentOff: 12,
+    rating: 4.9,
+    sold: "420",
+  },
+  {
+    name: "Samsung Galaxy Smart Case",
+    category: "Điện thoại",
+    price: 690000,
+    rating: 4.6,
+    sold: "740",
+  },
+  {
+    name: "Bàn phím cơ RGB Compact",
+    category: "Phụ kiện",
+    price: 1590000,
+    percentOff: 18,
+    rating: 4.8,
+    sold: "1k",
+  },
+  {
+    name: "Màn hình 27 inch IPS",
+    category: "Màn hình",
+    price: 4990000,
+    percentOff: 8,
+    rating: 4.7,
+    sold: "310",
+  },
+  {
+    name: "Chuột không dây Silent",
+    category: "Phụ kiện",
+    price: 490000,
+    rating: 4.5,
+    sold: "2.1k",
+  },
+  {
+    name: "SSD NVMe 1TB Gen 4",
+    category: "Linh kiện PC",
+    price: 2290000,
+    percentOff: 14,
+    rating: 4.9,
+    sold: "620",
+  },
+  {
+    name: "Sạc nhanh USB-C 65W",
+    category: "Phụ kiện",
+    price: 590000,
+    percentOff: 20,
+    rating: 4.6,
+    sold: "1.6k",
+  },
+  {
+    name: "Laptop Ultrabook Slim 14",
+    category: "Laptop",
+    price: 18990000,
+    rating: 4.8,
+    sold: "270",
+  },
+];
+
 function FilterMenuLeft() {
   return (
     <ul className="list-group list-group-flush rounded">
@@ -95,6 +175,32 @@ function ProductList() {
     <div className="container product-page py-4 px-xl-5">
       <ScrollToTopOnMount />
 
+      <section className="product-page-hero">
+        <div>
+          <span className="product-page-kicker">ElectroShop collection</span>
+          <h1>{currentCategory ? currentCategory.name : "Tất cả sản phẩm"}</h1>
+          <p>
+            Khám phá sản phẩm công nghệ nổi bật, sắp xếp gọn gàng để người dùng
+            xem nhanh, so sánh dễ và thêm vào giỏ chỉ trong một nhịp.
+          </p>
+        </div>
+
+        <div className="product-page-trust">
+          <span>
+            <FontAwesomeIcon icon={["fas", "truck"]} />
+            Giao nhanh
+          </span>
+          <span>
+            <FontAwesomeIcon icon={["fas", "shield-alt"]} />
+            Bảo hành
+          </span>
+          <span>
+            <FontAwesomeIcon icon={["fas", "sync-alt"]} />
+            Đổi trả
+          </span>
+        </div>
+      </section>
+
       <nav aria-label="breadcrumb" className="bg-custom-light rounded">
         <ol className="breadcrumb p-3 mb-0">
           <li className="breadcrumb-item">
@@ -155,16 +261,16 @@ function ProductList() {
         </div>
       </div>
 
-      <div className="row mb-4 mt-lg-3">
+      <div className="row mb-4 mt-lg-3 product-shop-layout">
         <div className="d-none d-lg-block col-lg-3">
-          <div className="border rounded shadow-sm bg-white">
+          <div className="border rounded shadow-sm bg-white product-filter-panel">
             <FilterMenuLeft />
           </div>
         </div>
 
         <div className="col-lg-9">
           <div className="d-flex flex-column h-100">
-            <div className="d-flex justify-content-between align-items-center mb-3">
+            <div className="d-flex justify-content-between align-items-center mb-3 product-list-heading">
               <div>
                 <h3 className="fw-bold mb-1">
                   {currentCategory ? currentCategory.name : "Tất cả sản phẩm"}
@@ -175,7 +281,7 @@ function ProductList() {
               </div>
             </div>
 
-            <div className="row mb-3">
+            <div className="row mb-3 product-toolbar">
               <div className="col-lg-3 d-none d-lg-block">
                 <select className="form-select" defaultValue="">
                   <option value="">Tất cả mẫu</option>
@@ -216,15 +322,23 @@ function ProductList() {
                 (viewType.grid ? "row-cols-xl-3" : "row-cols-xl-2")
               }
             >
-              {Array.from({ length: 10 }, (_, i) => {
+              {productCatalog.map((product, i) => {
                 if (viewType.grid) {
                   return (
-                    <Product key={i} percentOff={i % 2 === 0 ? 15 : null} />
+                    <Product
+                      key={product.name}
+                      product={product}
+                      percentOff={product.percentOff}
+                    />
                   );
                 }
 
                 return (
-                  <ProductH key={i} percentOff={i % 4 === 0 ? 15 : null} />
+                  <ProductH
+                    key={product.name}
+                    product={product}
+                    percentOff={product.percentOff}
+                  />
                 );
               })}
             </div>

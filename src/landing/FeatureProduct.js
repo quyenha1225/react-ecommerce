@@ -1,7 +1,21 @@
 import Image from "../nillkin-case.webp";
 import { Link } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useState } from "react";
+import { addProductToCart } from "../utils/cartEvents";
 
 function FeatureProduct() {
+  const [isAdded, setIsAdded] = useState(false);
+
+  function handleAddToCart() {
+    addProductToCart();
+    setIsAdded(true);
+
+    window.setTimeout(() => {
+      setIsAdded(false);
+    }, 1400);
+  }
+
   return (
     <div className="col">
       <div className="card shadow-sm home-product-card home-animate">
@@ -14,12 +28,27 @@ function FeatureProduct() {
           />
         </Link>
         <div className="card-body">
-          <h5 className="card-title text-center">Nillkin iPhone X cover</h5>
-          <p className="card-text text-center text-muted">10.000.000 đ</p>
-          <div className="d-grid gap-2">
+          <div className="eshop-product-meta mb-2">
+            <span>Phụ kiện</span>
+            <span>
+              <FontAwesomeIcon icon={["fas", "star"]} />
+              4.8 · 1.2k bán
+            </span>
+          </div>
+          <h5 className="card-title">Nillkin iPhone X cover</h5>
+          <p className="card-text text-muted">10.000.000 đ</p>
+          <div className="home-product-actions">
             <Link to="/products/1" className="btn btn-outline-dark" replace>
               Xem chi tiết
             </Link>
+            <button
+              type="button"
+              className={"btn eshop-add-cart-btn " + (isAdded ? "is-added" : "")}
+              onClick={handleAddToCart}
+            >
+              <FontAwesomeIcon icon={["fas", isAdded ? "check" : "cart-plus"]} />
+              <span>{isAdded ? "Đã thêm" : "Thêm giỏ"}</span>
+            </button>
           </div>
         </div>
       </div>
