@@ -1,38 +1,51 @@
 import Image from "../nillkin-case-1.jpg";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useState } from "react";
+import { addProductToCart } from "../utils/cartEvents";
+
+function formatCurrency(value) {
+  return new Intl.NumberFormat("vi-VN", {
+    style: "currency",
+    currency: "VND",
+    maximumFractionDigits: 0,
+  }).format(value);
+}
 
 function ProductH(props) {
-  const price = 10000;
-  let percentOff;
-  let offPrice = `${price}Ks`;
+  const [isAdded, setIsAdded] = useState(false);
+  const product = props.product || {};
+  const price = product.price || 10000000;
+  const productName = product.name || "Nillkin iPhone X cover";
+  const category = product.category || "Phụ kiện";
+  const rating = product.rating || 4.8;
+  const sold = product.sold || "1.2k";
+  const percentOff = props.percentOff || product.percentOff;
+  const finalPrice = percentOff
+    ? price - (percentOff * price) / 100
+    : price;
 
-  if (props.percentOff && props.percentOff > 0) {
-    percentOff = (
-      <div
-        className="badge bg-dim py-2 text-white position-absolute"
-        style={{ top: "0.5rem", left: "0.5rem" }}
-      >
-        {props.percentOff}% OFF
-      </div>
-    );
+  function handleAddToCart() {
+    addProductToCart();
+    setIsAdded(true);
 
-    offPrice = (
-      <>
-        <del>{price}Ks</del> {price - (props.percentOff * price) / 100}Ks
-      </>
-    );
+    window.setTimeout(() => {
+      setIsAdded(false);
+    }, 1400);
   }
+
   return (
     <div className="col">
-      <div className="card shadow-sm">
+      <article className={"card shadow-sm eshop-product-card eshop-product-card-horizontal " + (isAdded ? "is-added" : "")}>
         <div className="row g-0">
-          <div className="col-4">
-            <Link to="/products/1" href="!#" replace>
-              {percentOff}
+          <div className="col-4 eshop-product-horizontal-media-wrap">
+            <Link to="/products/1" className="eshop-product-media h-100" replace>
+              {percentOff ? (
+                <span className="eshop-product-sale-badge">-{percentOff}%</span>
+              ) : null}
               <img
                 className="rounded-start bg-dark cover w-100 h-100"
-                alt=""
+                alt={productName}
                 src={Image}
               />
             </Link>
@@ -40,22 +53,45 @@ function ProductH(props) {
           <div className="col-8">
             <div className="card-body h-100">
               <div className="d-flex flex-column h-100">
+                <div className="eshop-product-meta mb-2">
+                  <span>{category}</span>
+                  <span>
+                    <FontAwesomeIcon icon={["fas", "star"]} />
+                    {rating} · {sold} bán
+                  </span>
+                </div>
+
                 <h5 className="card-title text-dark text-truncate mb-1">
-                  Nillkin iPhone X cover
+                  {productName}
                 </h5>
-                <span className="card-text text-muted mb-2 flex-shrink-0">
-                  {offPrice}
-                </span>
-                <div className="mt-auto d-flex">
-                  <button className="btn btn-outline-dark ms-auto">
-                    <FontAwesomeIcon icon={["fas", "cart-plus"]} /> Add to cart
+
+                <p className="eshop-product-desc mb-2">
+                  Thiết kế gọn, dễ dùng, phù hợp nhu cầu công nghệ hằng ngày.
+                </p>
+
+                <div className="eshop-product-price-row mb-3">
+                  <strong>{formatCurrency(finalPrice)}</strong>
+                  {percentOff ? <del>{formatCurrency(price)}</del> : null}
+                </div>
+
+                <div className="mt-auto d-flex gap-2 justify-content-end">
+                  <Link to="/products/1" className="btn eshop-detail-btn" replace>
+                    Chi tiết
+                  </Link>
+                  <button
+                    type="button"
+                    className={"btn eshop-add-cart-btn " + (isAdded ? "is-added" : "")}
+                    onClick={handleAddToCart}
+                  >
+                    <FontAwesomeIcon icon={["fas", isAdded ? "check" : "cart-plus"]} />
+                    <span>{isAdded ? "Đã thêm" : "Thêm giỏ"}</span>
                   </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
+      </article>
     </div>
   );
 }
