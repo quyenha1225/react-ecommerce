@@ -1,0 +1,11 @@
+{
+  "name": "cnpm-fullstack",
+  "version": "1.0.0",
+  "scripts": {
+    "install-all": "npm install --prefix backend && npm install --prefix frontend",
+    "dev": "npx concurrently \"npm run start:dev --prefix backend\" \"npm run start --prefix frontend\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
