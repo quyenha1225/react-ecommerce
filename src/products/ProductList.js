@@ -4,6 +4,7 @@ import ProductH from "./ProductH";
 import { useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import ScrollToTopOnMount from "../template/ScrollToTopOnMount";
+import { addToCart } from "../utils/cartStorage";
 
 const categories = [
   { name: "Tất cả sản phẩm", slug: "all" },
@@ -18,6 +19,7 @@ const brands = ["Apple", "Samsung", "Asus", "Dell", "Lenovo", "Xiaomi"];
 
 const productCatalog = [
   {
+    id: 1,
     name: "Nillkin iPhone X cover",
     category: "Phụ kiện",
     price: 10000000,
@@ -26,6 +28,7 @@ const productCatalog = [
     sold: "1.2k",
   },
   {
+    id: 2,
     name: "Tai nghe Bluetooth Air Pro",
     category: "Phụ kiện",
     price: 1290000,
@@ -34,6 +37,7 @@ const productCatalog = [
     sold: "860",
   },
   {
+    id: 3,
     name: "Laptop Gaming GTX Edition",
     category: "Laptop",
     price: 24990000,
@@ -42,6 +46,7 @@ const productCatalog = [
     sold: "420",
   },
   {
+    id: 4,
     name: "Samsung Galaxy Smart Case",
     category: "Điện thoại",
     price: 690000,
@@ -49,6 +54,7 @@ const productCatalog = [
     sold: "740",
   },
   {
+    id: 5,
     name: "Bàn phím cơ RGB Compact",
     category: "Phụ kiện",
     price: 1590000,
@@ -57,6 +63,7 @@ const productCatalog = [
     sold: "1k",
   },
   {
+    id: 6,
     name: "Màn hình 27 inch IPS",
     category: "Màn hình",
     price: 4990000,
@@ -64,7 +71,8 @@ const productCatalog = [
     rating: 4.7,
     sold: "310",
   },
-  {
+  { 
+    id: 7,
     name: "Chuột không dây Silent",
     category: "Phụ kiện",
     price: 490000,
@@ -72,6 +80,7 @@ const productCatalog = [
     sold: "2.1k",
   },
   {
+    id: 8,
     name: "SSD NVMe 1TB Gen 4",
     category: "Linh kiện PC",
     price: 2290000,
@@ -80,6 +89,7 @@ const productCatalog = [
     sold: "620",
   },
   {
+    id: 9,
     name: "Sạc nhanh USB-C 65W",
     category: "Phụ kiện",
     price: 590000,
@@ -87,7 +97,8 @@ const productCatalog = [
     rating: 4.6,
     sold: "1.6k",
   },
-  {
+  { 
+    id: 10,
     name: "Laptop Ultrabook Slim 14",
     category: "Laptop",
     price: 18990000,

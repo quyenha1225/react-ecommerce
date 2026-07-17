@@ -2,7 +2,7 @@ import Image from "../nillkin-case-1.jpg";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
-import { addProductToCart } from "../utils/cartEvents";
+import { addToCart } from "../utils/cartStorage";
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", {
@@ -12,44 +12,66 @@ function formatCurrency(value) {
   }).format(value);
 }
 
-function Product(props) {
+function Product({ product = {}, percentOff }) {
   const [isAdded, setIsAdded] = useState(false);
-  const product = props.product || {};
+
   const price = product.price || 10000000;
   const productName = product.name || "Nillkin iPhone X cover";
   const category = product.category || "Phụ kiện";
   const rating = product.rating || 4.8;
   const sold = product.sold || "1.2k";
-  const percentOff = props.percentOff || product.percentOff;
-  const finalPrice = percentOff
-    ? price - (percentOff * price) / 100
+
+  const discount = percentOff || product.percentOff;
+
+  const finalPrice = discount
+    ? price - (discount * price) / 100
     : price;
 
   function handleAddToCart() {
-    addProductToCart();
+    addToCart({
+      id: product.id,
+      name: productName,
+      brand: category,
+      price: finalPrice,
+      oldPrice: price,
+      quantity: 1,
+      image: Image,
+    });
+
     setIsAdded(true);
 
-    window.setTimeout(() => {
+    setTimeout(() => {
       setIsAdded(false);
-    }, 1400);
+    }, 1200);
   }
 
   return (
     <div className="col product-grid-item">
-      <article className={"card shadow-sm eshop-product-card " + (isAdded ? "is-added" : "")}>
-        <Link to="/products/1" className="eshop-product-media" replace>
-          {percentOff ? (
-            <span className="eshop-product-sale-badge">-{percentOff}%</span>
+      <article
+        className={`card shadow-sm eshop-product-card ${
+          isAdded ? "is-added" : ""
+        }`}
+      >
+        <Link
+          to={`/products/${product.id}`}
+          className="eshop-product-media"
+        >
+          {discount ? (
+            <span className="eshop-product-sale-badge">
+              -{discount}%
+            </span>
           ) : (
             <span className="eshop-product-sale-badge eshop-product-new-badge">
               New
             </span>
           )}
+
           <img
-            className="card-img-top bg-dark cover"
-            alt={productName}
             src={Image}
+            alt={productName}
+            className="card-img-top bg-dark cover"
           />
+
           <span className="eshop-product-quick-view">
             <FontAwesomeIcon icon={["fas", "eye"]} />
             Xem nhanh
@@ -57,10 +79,13 @@ function Product(props) {
         </Link>
 
         <div className="card-body eshop-product-body">
+
           <div className="eshop-product-meta">
             <span>{category}</span>
+
             <span>
               <FontAwesomeIcon icon={["fas", "star"]} />
+              {" "}
               {rating} · {sold} bán
             </span>
           </div>
@@ -75,22 +100,43 @@ function Product(props) {
 
           <div className="eshop-product-price-row">
             <strong>{formatCurrency(finalPrice)}</strong>
-            {percentOff ? <del>{formatCurrency(price)}</del> : null}
+
+            {discount && (
+              <del>{formatCurrency(price)}</del>
+            )}
           </div>
 
           <div className="eshop-product-actions">
-            <Link to="/products/1" className="btn eshop-detail-btn" replace>
+
+            <Link
+              to={`/products/${product.id}`}
+              className="btn eshop-detail-btn"
+            >
               Chi tiết
             </Link>
+
             <button
               type="button"
-              className={"btn eshop-add-cart-btn " + (isAdded ? "is-added" : "")}
+              className={`btn eshop-add-cart-btn ${
+                isAdded ? "is-added" : ""
+              }`}
               onClick={handleAddToCart}
             >
-              <FontAwesomeIcon icon={["fas", isAdded ? "check" : "cart-plus"]} />
-              <span>{isAdded ? "Đã thêm" : "Thêm giỏ"}</span>
+              <FontAwesomeIcon
+                icon={[
+                  "fas",
+                  isAdded ? "check" : "cart-plus",
+                ]}
+              />
+
+              <span>
+                {isAdded ? "Đã thêm" : "Thêm giỏ"}
+              </span>
+
             </button>
+
           </div>
+
         </div>
       </article>
     </div>

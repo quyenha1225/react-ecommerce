@@ -3,11 +3,14 @@ import ProductDetail from "./products/detail/ProductDetail";
 import { Routes, Route } from "react-router-dom";
 import Landing from "./landing/Landing";
 import ProductList from "./products/ProductList";
+import Login from "./login/Login";
+import Cart from "./cart/Cart";
 
 function App() {
   return (
     <Template>
       <Routes>
+        <Route path="/cart" element={<Cart />} />
         <Route path="/products" element={<ProductList />} />
         <Route path="/products/:slug" element={<ProductDetail />} />
         <Route path="/" element={<Landing />} />

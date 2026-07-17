@@ -1,25 +1,31 @@
 import { Link, NavLink } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useEffect, useRef, useState } from "react";
-import { getStoredCartCount } from "../utils/cartEvents";
+import { getCart } from "../utils/cartStorage";
+import Login from "../login/Login";
+
 
 const logo = `${process.env.PUBLIC_URL}/logo/e-shop-logo.png`;
 
 function Header() {
   const [isCategoryOpen, setIsCategoryOpen] = useState(false);
   const [isNavOpen, setIsNavOpen] = useState(false);
-  const [cartCount, setCartCount] = useState(getStoredCartCount);
+  const [cartCount, setCartCount] = useState(0);
+  const [showLogin, setShowLogin] = useState(false);
+  console.log("showLogin:", showLogin);
   const categoryDropdownRef = useRef(null);
 
   useEffect(() => {
-    function closeCategoryMenu(event) {
-      if (
-        categoryDropdownRef.current &&
-        !categoryDropdownRef.current.contains(event.target)
-      ) {
-        setIsCategoryOpen(false);
-      }
-    }
+    function closeMenusOutside(event) {
+        if (
+    categoryDropdownRef.current &&
+    !categoryDropdownRef.current.contains(event.target)
+   ) {
+    setIsCategoryOpen(false);
+   }
+
+
+  }
 
     function closeCategoryMenuOnEscape(event) {
       if (event.key === "Escape") {
@@ -28,42 +34,46 @@ function Header() {
       }
     }
 
-    document.addEventListener("mousedown", closeCategoryMenu);
+    document.addEventListener("mousedown", closeMenusOutside);
     document.addEventListener("keydown", closeCategoryMenuOnEscape);
 
     return () => {
-      document.removeEventListener("mousedown", closeCategoryMenu);
+      document.removeEventListener("mousedown", closeMenusOutside);
       document.removeEventListener("keydown", closeCategoryMenuOnEscape);
     };
   }, []);
 
   useEffect(() => {
-    function updateCartCount(event) {
-      setCartCount(event.detail?.count ?? getStoredCartCount());
-    }
+  function updateCart() {
+    const cart = getCart();
 
-    function syncCartCount() {
-      setCartCount(getStoredCartCount());
-    }
+    const count = cart.reduce(
+      (sum, item) => sum + item.quantity,
+      0
+    );
 
-    window.addEventListener("eshop:cart-updated", updateCartCount);
-    window.addEventListener("storage", syncCartCount);
+    setCartCount(count);
+  }
 
-    return () => {
-      window.removeEventListener("eshop:cart-updated", updateCartCount);
-      window.removeEventListener("storage", syncCartCount);
-    };
+  updateCart();
+
+  window.addEventListener("eshop:cart-updated", updateCart);
+
+  return () => {
+    window.removeEventListener("eshop:cart-updated", updateCart);
+  };
   }, []);
 
   function closeMenus() {
     setIsCategoryOpen(false);
     setIsNavOpen(false);
   }
-
+ 
   const getNavLinkClassName = ({ isActive }) =>
     isActive ? "eshop-nav-link is-active" : "eshop-nav-link";
 
   return (
+    <>
     <header className="eshop-header">
       <div className="eshop-topbar">
         <div className="container-fluid eshop-header-inner">
@@ -92,11 +102,14 @@ function Header() {
               <span>Giỏ hàng</span>
               <b key={cartCount}>{cartCount}</b>
             </Link>
-
-            <Link to="/login" className="eshop-user-btn">
+            <button
+              type="button"
+              className="eshop-user-btn"
+              onClick={() => setShowLogin(true)}
+            >
               <FontAwesomeIcon icon={["fas", "user-alt"]} />
               <span>Tài khoản</span>
-            </Link>
+            </button>
           </div>
 
           <button
@@ -205,7 +218,13 @@ function Header() {
 
         </div>
       </nav>
+      
     </header>
+    <Login
+       show={showLogin}
+       onClose={() => setShowLogin(false)}
+      />
+    </>
   );
 }
 
