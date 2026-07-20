@@ -1851,3 +1851,438 @@ body {
     transition-duration: 0.001ms !important;
   }
 }
+/* =====================================================
+   LANDING TECHNOLOGY EFFECT
+   ===================================================== */
+
+:root {
+  --home-tech-cyan: #31d7ff;
+  --home-tech-blue: #4f7cff;
+  --home-tech-violet: #8b5cf6;
+}
+
+.home-tech-grid {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    linear-gradient(
+      rgba(79, 124, 255, 0.055) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(79, 124, 255, 0.055) 1px,
+      transparent 1px
+    ),
+    radial-gradient(
+      circle at 12% 20%,
+      rgba(49, 215, 255, 0.14),
+      transparent 27%
+    ),
+    radial-gradient(
+      circle at 88% 15%,
+      rgba(139, 92, 246, 0.13),
+      transparent 25%
+    ),
+    linear-gradient(
+      180deg,
+      #ffffff 0%,
+      #f4f7ff 100%
+    );
+
+  background-size:
+    42px 42px,
+    42px 42px,
+    auto,
+    auto,
+    auto;
+}
+
+.home-tech-orb {
+  position: absolute;
+  z-index: -1;
+  width: 360px;
+  height: 360px;
+  border-radius: 50%;
+  filter: blur(90px);
+  opacity: 0.34;
+  pointer-events: none;
+  animation: techOrbFloat 8s ease-in-out infinite;
+}
+
+.home-tech-orb-one {
+  top: -180px;
+  left: -120px;
+  background: var(--home-tech-cyan);
+}
+
+.home-tech-orb-two {
+  right: -150px;
+  bottom: -180px;
+  background: var(--home-tech-violet);
+  animation-delay: -4s;
+}
+
+.home-tech-product-card {
+  position: relative;
+  overflow: hidden;
+  border:
+    1px solid rgba(79, 124, 255, 0.14)
+    !important;
+  border-radius: 22px !important;
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow:
+    0 18px 46px rgba(31, 41, 85, 0.1),
+    inset 0 1px 0 rgba(255, 255, 255, 0.86)
+    !important;
+  backdrop-filter: blur(16px);
+  transition:
+    transform 0.35s cubic-bezier(.2, .8, .2, 1),
+    box-shadow 0.35s ease,
+    border-color 0.35s ease;
+}
+
+.home-tech-product-card:hover {
+  border-color:
+    rgba(49, 215, 255, 0.5)
+    !important;
+  box-shadow:
+    0 26px 70px rgba(31, 41, 85, 0.18),
+    0 0 0 1px rgba(49, 215, 255, 0.16)
+    !important;
+  transform:
+    translate3d(0, -12px, 0)
+    rotateX(1.8deg);
+}
+
+.home-tech-product-card .home-product-media {
+  aspect-ratio: 4 / 3;
+  background:
+    radial-gradient(
+      circle at 50% 20%,
+      rgba(79, 124, 255, 0.13),
+      transparent 38%
+    ),
+    #f8faff;
+}
+
+.home-tech-product-card .home-product-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  padding: 18px;
+  transition:
+    transform 0.5s cubic-bezier(.2, .8, .2, 1),
+    filter 0.4s ease;
+}
+
+.home-tech-product-card:hover
+.home-product-media img {
+  filter: saturate(1.08) contrast(1.04);
+  transform:
+    translate3d(0, -7px, 0)
+    scale(1.06);
+}
+
+.home-tech-product-card .card-body {
+  min-height: 250px;
+  padding: 20px;
+}
+
+.home-product-meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+  color: #667085;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.home-product-meta-row svg {
+  margin-right: 5px;
+  color: #f6b719;
+}
+
+.home-tech-product-card .card-title {
+  min-height: 48px;
+  margin-bottom: 8px;
+  color: #121827;
+  font-size: 1.08rem;
+  font-weight: 900;
+  line-height: 1.35;
+}
+
+.home-product-brand {
+  margin-bottom: 12px;
+  color: #7a8494;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.home-product-price {
+  margin-bottom: 18px;
+  color: #f05a1f;
+  font-size: 1.18rem;
+  font-weight: 900;
+}
+
+.home-add-cart-btn {
+  color: #ffffff !important;
+  border: 0 !important;
+  background:
+    linear-gradient(
+      135deg,
+      var(--home-tech-blue),
+      var(--home-tech-violet)
+    )
+    !important;
+  box-shadow:
+    0 12px 24px rgba(79, 124, 255, 0.24);
+}
+
+.home-add-cart-btn:hover {
+  color: #ffffff !important;
+  box-shadow:
+    0 16px 34px rgba(79, 124, 255, 0.34);
+  transform: translateY(-2px);
+}
+
+.home-product-scanline {
+  position: absolute;
+  inset: -35% 0 auto;
+  height: 36%;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      transparent,
+      rgba(49, 215, 255, 0.2),
+      transparent
+    );
+  opacity: 0;
+}
+
+.home-tech-product-card:hover
+.home-product-scanline {
+  opacity: 1;
+  animation: productScan 1.15s ease;
+}
+
+.home-product-fall {
+  opacity: 0;
+  animation:
+    productFall
+    0.78s
+    cubic-bezier(.18, .82, .28, 1.12)
+    calc(var(--fall-index) * 0.09s)
+    forwards;
+}
+
+.home-shape-drop {
+  opacity: 0;
+  animation:
+    shapeDrop
+    0.82s
+    cubic-bezier(.16, .84, .26, 1.14)
+    calc(var(--tile-index, 0) * 0.08s)
+    forwards;
+}
+
+.home-reveal {
+  opacity: 0;
+  animation:
+    revealTech
+    0.76s
+    cubic-bezier(.2, .8, .2, 1)
+    forwards;
+}
+
+.home-loading-state,
+.home-empty-state {
+  display: grid;
+  min-height: 260px;
+  place-items: center;
+  align-content: center;
+  gap: 16px;
+  padding: 30px;
+  color: #596276;
+  border:
+    1px solid rgba(79, 124, 255, 0.12);
+  border-radius: 22px;
+  background:
+    rgba(255, 255, 255, 0.75);
+  box-shadow:
+    0 18px 46px rgba(31, 41, 85, 0.08);
+}
+
+.home-loader-ring {
+  width: 52px;
+  height: 52px;
+  border:
+    4px solid rgba(79, 124, 255, 0.13);
+  border-top-color: var(--home-tech-blue);
+  border-right-color: var(--home-tech-cyan);
+  border-radius: 50%;
+  animation: techSpin 0.8s linear infinite;
+}
+
+.home-category-tile {
+  border-radius: 18px;
+  clip-path:
+    polygon(
+      0 0,
+      calc(100% - 22px) 0,
+      100% 22px,
+      100% 100%,
+      22px 100%,
+      0 calc(100% - 22px)
+    );
+}
+
+.home-deal-layout {
+  border-radius: 24px;
+}
+
+.home-deal-product {
+  clip-path:
+    polygon(
+      10% 0,
+      100% 0,
+      100% 88%,
+      88% 100%,
+      0 100%,
+      0 12%
+    );
+}
+
+.home-service-card,
+.home-trust-strip div {
+  border-radius: 18px;
+}
+
+@keyframes productFall {
+  0% {
+    opacity: 0;
+    transform:
+      translate3d(0, -90px, 0)
+      rotateX(-12deg)
+      scale(0.92);
+  }
+
+  65% {
+    opacity: 1;
+    transform:
+      translate3d(0, 9px, 0)
+      rotateX(1deg)
+      scale(1.01);
+  }
+
+  100% {
+    opacity: 1;
+    transform:
+      translate3d(0, 0, 0)
+      rotateX(0)
+      scale(1);
+  }
+}
+
+@keyframes shapeDrop {
+  0% {
+    opacity: 0;
+    filter: blur(5px);
+    transform:
+      translate3d(0, -70px, 0)
+      rotate(-2deg)
+      scale(0.94);
+  }
+
+  70% {
+    opacity: 1;
+    filter: blur(0);
+    transform:
+      translate3d(0, 8px, 0)
+      rotate(0.5deg)
+      scale(1.01);
+  }
+
+  100% {
+    opacity: 1;
+    filter: blur(0);
+    transform:
+      translate3d(0, 0, 0)
+      rotate(0)
+      scale(1);
+  }
+}
+
+@keyframes revealTech {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+    transform: translateY(28px);
+  }
+
+  to {
+    opacity: 1;
+    filter: blur(0);
+    transform: translateY(0);
+  }
+}
+
+@keyframes productScan {
+  from {
+    top: -35%;
+  }
+
+  to {
+    top: 105%;
+  }
+}
+
+@keyframes techSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes techOrbFloat {
+  0%,
+  100% {
+    transform:
+      translate3d(0, 0, 0)
+      scale(1);
+  }
+
+  50% {
+    transform:
+      translate3d(24px, -18px, 0)
+      scale(1.08);
+  }
+}
+
+@media (max-width: 767.98px) {
+  .home-tech-product-card {
+    border-radius: 18px !important;
+  }
+
+  .home-tech-product-card
+  .home-product-media {
+    aspect-ratio: 16 / 11;
+  }
+
+  .home-category-tile {
+    min-height: 132px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-product-fall,
+  .home-shape-drop,
+  .home-reveal {
+    opacity: 1;
+    animation: none !important;
+  }
+}

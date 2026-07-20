@@ -8,24 +8,41 @@ function App() {
   return (
     <Template>
       <Routes>
-        <Route path="/products" element={<ProductList />} />
-        <Route path="/products/:slug" element={<ProductDetail />} />
         <Route path="/" element={<Landing />} />
-        <Route path="/about" element={
+
+        <Route path="/products" element={<ProductList />} />
+
+        <Route
+          path="/category/:categoryName"
+          element={<ProductList />}
+        />
+
+        <Route
+          path="/products/:slug"
+          element={<ProductDetail />}
+        />
+
+        <Route
+          path="/about"
+          element={
             <div className="container mt-5 text-center">
               <h2>Trang About đang được xây dựng...</h2>
             </div>
           }
         />
-        <Route path="*" element={
+
+        <Route
+          path="*"
+          element={
             <div className="container mt-5 text-center">
-              <h1 className="text-danger">404 - Không tìm thấy trang</h1>
+              <h1 className="text-danger">
+                404 - Không tìm thấy trang
+              </h1>
               <p>Vui lòng quay lại trang chủ.</p>
             </div>
-          }/>
-          <Route path="/category/:categoryName" element={<ProductList />} />
+          }
+        />
       </Routes>
-      
     </Template>
   );
 }
