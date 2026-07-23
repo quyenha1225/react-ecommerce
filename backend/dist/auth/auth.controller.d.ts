@@ -1,5 +1,6 @@
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
+import { LoginDto } from './login.dto';
 export declare class AuthController {
     private readonly authService;
     constructor(authService: AuthService);
@@ -7,21 +8,21 @@ export declare class AuthController {
         success: boolean;
         token: string;
         user: {
-            id: number;
+            id: any;
             name: string;
             email: string;
+            role: string;
         };
     }>;
-    login(body: {
-        email: string;
-        password: string;
-    }): Promise<{
+    login(body: LoginDto): Promise<{
         success: boolean;
         token: string;
         user: {
-            id: number;
-            name: string;
-            email: string;
+            id: any;
+            name: any;
+            email: any;
+            role: any;
+            permissions: any;
         };
     }>;
 }

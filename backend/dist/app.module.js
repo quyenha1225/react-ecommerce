@@ -12,12 +12,12 @@ const config_1 = require("@nestjs/config");
 const typeorm_1 = require("@nestjs/typeorm");
 const app_controller_1 = require("./app.controller");
 const app_service_1 = require("./app.service");
-const users_module_1 = require("./users/users.module");
 const auth_module_1 = require("./auth/auth.module");
 const products_module_1 = require("./products/products.module");
 const cart_module_1 = require("./cart/cart.module");
 const categories_controller_1 = require("./categories/categories.controller");
-const ai_controller_1 = require("./ai/ai.controller");
+const ai_module_1 = require("./ai/ai.module");
+const management_module_1 = require("./management/management.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -34,15 +34,17 @@ exports.AppModule = AppModule = __decorate([
                 username: process.env.DB_USERNAME,
                 password: process.env.DB_PASSWORD,
                 database: process.env.DB_DATABASE,
+                charset: 'utf8mb4_unicode_ci',
                 entities: [__dirname + '/**/*.entity{.ts,.js}'],
-                synchronize: true,
+                synchronize: false,
             }),
-            users_module_1.UsersModule,
             auth_module_1.AuthModule,
             products_module_1.ProductsModule,
             cart_module_1.CartModule,
+            management_module_1.ManagementModule,
+            ai_module_1.AiModule,
         ],
-        controllers: [app_controller_1.AppController, categories_controller_1.CategoriesController, ai_controller_1.AiController],
+        controllers: [app_controller_1.AppController, categories_controller_1.CategoriesController],
         providers: [app_service_1.AppService],
     })
 ], AppModule);

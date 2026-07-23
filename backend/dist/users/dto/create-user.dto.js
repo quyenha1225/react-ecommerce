@@ -15,11 +15,13 @@ class CreateUserDto {
     name;
     email;
     password;
+    phone;
 }
 exports.CreateUserDto = CreateUserDto;
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsString)(),
+    (0, class_validator_1.MaxLength)(150),
     __metadata("design:type", String)
 ], CreateUserDto.prototype, "name", void 0);
 __decorate([
@@ -30,7 +32,13 @@ __decorate([
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsString)(),
-    (0, class_validator_1.MinLength)(6),
+    (0, class_validator_1.MinLength)(10),
+    (0, class_validator_1.Matches)(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/, { message: 'password must include upper/lowercase, number and symbol' }),
     __metadata("design:type", String)
 ], CreateUserDto.prototype, "password", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.Matches)(/^[0-9+]{9,15}$/),
+    __metadata("design:type", String)
+], CreateUserDto.prototype, "phone", void 0);
 //# sourceMappingURL=create-user.dto.js.map

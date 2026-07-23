@@ -3,12 +3,12 @@ import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ProductsModule } from './products/products.module';
 import { CartModule } from './cart/cart.module';
 import { CategoriesController } from './categories/categories.controller';
-import { AiController } from './ai/ai.controller';
+import { AiModule } from './ai/ai.module';
+import { ManagementModule } from './management/management.module';
 
 @Module({
   imports: [
@@ -24,17 +24,21 @@ import { AiController } from './ai/ai.controller';
       username: process.env.DB_USERNAME,
       password: process.env.DB_PASSWORD,
       database: process.env.DB_DATABASE,
+      // Khóa charset/collation ngay từ lúc mở connection để dữ liệu tiếng Việt
+      // không bị driver chuyển thành dấu "?" trước khi ghi xuống MySQL.
+      charset: 'utf8mb4_unicode_ci',
 
       entities: [__dirname + '/**/*.entity{.ts,.js}'],
-      synchronize: true, // Lưu ý: Tự động đồng bộ cấu trúc bảng từ Entity vào DB (chế độ Dev)
+      synchronize: false, // Schema được quản lý bằng các file SQL, không tự ý sửa database.
     }),
 
-    UsersModule,
     AuthModule,
     ProductsModule,
     CartModule,
+    ManagementModule,
+    AiModule,
   ],
-  controllers: [AppController, CategoriesController, AiController],
+  controllers: [AppController, CategoriesController],
   providers: [AppService],
 })
 export class AppModule {}

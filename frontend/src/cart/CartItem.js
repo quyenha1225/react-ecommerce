@@ -6,7 +6,7 @@ import {
 } from "../utils/cartStorage";
 
 function formatPrice(price) {
-  return price.toLocaleString("vi-VN") + "đ";
+  return (Number(price) || 0).toLocaleString("vi-VN") + "đ";
 }
 
 function CartItem({ product }) {
@@ -46,9 +46,7 @@ function CartItem({ product }) {
             {formatPrice(product.price)}
           </span>
 
-          <span className="old-price">
-            {formatPrice(product.oldPrice)}
-          </span>
+          {Number(product.oldPrice)>Number(product.price)&&<span className="old-price">{formatPrice(product.oldPrice)}</span>}
 
         </div>
 
@@ -56,10 +54,7 @@ function CartItem({ product }) {
 
           <div className="quantity-box">
             <button
-            onClick={() => {
-                decreaseQuantity(product.id);
-                window.location.reload();
-            }}
+            onClick={() => decreaseQuantity(product.id)}
             >
             <FontAwesomeIcon icon={["fas", "minus"]} />
             </button>
@@ -69,10 +64,7 @@ function CartItem({ product }) {
             <span>{product.quantity}</span>
 
             <button
-            onClick={() => {
-                increaseQuantity(product.id);
-                window.location.reload();
-            }}
+            onClick={() => increaseQuantity(product.id)}
             >
             <FontAwesomeIcon icon={["fas", "plus"]} />
             </button>
@@ -81,10 +73,7 @@ function CartItem({ product }) {
 
           <button
             className="delete-btn"
-            onClick={() => {
-                removeCartItem(product.id);
-                window.location.reload();
-            }}
+            onClick={() => removeCartItem(product.id)}
           >
             <FontAwesomeIcon icon={["fas", "trash"]} />
 

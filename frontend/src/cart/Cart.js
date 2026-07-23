@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import CartItem from "./CartItem";
 import CheckoutStepper from "./CheckoutStepper";
 import CustomerForm from "./CustomerForm";
-import { getCart } from "../utils/cartStorage";
+import { clearCart, getCart } from "../utils/cartStorage";
 import PaymentForm from "./PaymentForm";
 import Success from "./Success";
 import { useNavigate } from "react-router-dom";
@@ -127,7 +127,7 @@ function Cart() {
             total={total}
             onBack={() => setStep(2)}
             onFinish={() => {
-              localStorage.removeItem("eshop-cart");
+              clearCart();
               setProducts([]);
               setStep(4);
             }}

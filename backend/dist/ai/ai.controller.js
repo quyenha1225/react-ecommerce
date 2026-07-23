@@ -8,22 +8,34 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
+var __param = (this && this.__param) || function (paramIndex, decorator) {
+    return function (target, key) { decorator(target, key, paramIndex); }
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AiController = void 0;
 const common_1 = require("@nestjs/common");
+const ai_service_1 = require("./ai.service");
+const ai_search_dto_1 = require("./dto/ai-search.dto");
 let AiController = class AiController {
-    testSearch() {
-        return { message: 'AI Search API is working!' };
+    aiService;
+    constructor(aiService) {
+        this.aiService = aiService;
+    }
+    search(body, req) {
+        return this.aiService.search(body.query.trim(), Boolean(body.useAI), req.ip || 'anonymous');
     }
 };
 exports.AiController = AiController;
 __decorate([
-    (0, common_1.Post)('search-test'),
+    (0, common_1.Post)('search'),
+    __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", []),
+    __metadata("design:paramtypes", [ai_search_dto_1.AiSearchDto, Object]),
     __metadata("design:returntype", void 0)
-], AiController.prototype, "testSearch", null);
+], AiController.prototype, "search", null);
 exports.AiController = AiController = __decorate([
-    (0, common_1.Controller)('ai')
+    (0, common_1.Controller)('ai'),
+    __metadata("design:paramtypes", [ai_service_1.AiService])
 ], AiController);
 //# sourceMappingURL=ai.controller.js.map

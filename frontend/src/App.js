@@ -6,11 +6,16 @@ import ProductList from "./products/ProductList";
 import Login from "./login/Login";
 import Cart from "./cart/Cart";
 import About from "./about/About";
+import AdminDashboard from "./admin/AdminDashboard";
+import Contact from "./contact/Contact";
+import SearchResults from "./search/SearchResults";
 
 function App() {
   return (
-    <Template>
-      <Routes>
+    <Routes>
+      <Route path="/admin/*" element={<AdminDashboard />} />
+      <Route path="/guest" element={<Template guestMode><Landing /></Template>} />
+      <Route path="*" element={<Template><Routes>
         <Route path="/" element={<Landing />} />
 
         <Route path="/login" element={<Login />} />
@@ -18,6 +23,7 @@ function App() {
         <Route path="/cart" element={<Cart />} />
 
         <Route path="/products" element={<ProductList />} />
+        <Route path="/search" element={<SearchResults />} />
 
         <Route
           path="/category/:categoryName"
@@ -30,6 +36,7 @@ function App() {
         />
 
         <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
 
         <Route
           path="*"
@@ -42,8 +49,8 @@ function App() {
             </div>
           }
         />
-      </Routes>
-    </Template>
+      </Routes></Template>} />
+    </Routes>
   );
 }
 

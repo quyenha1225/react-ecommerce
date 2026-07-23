@@ -3,7 +3,7 @@ export declare class ProductsService {
     private dataSource;
     constructor(dataSource: DataSource);
     findAll(): Promise<any>;
-    findOne(productId: number): Promise<any>;
+    findOne(identifier: string | number): Promise<any>;
     getRecommendedProducts(productId: number): Promise<any>;
     logView(userId: number, productId: number): Promise<any>;
     getReviews(productId: number): Promise<any>;

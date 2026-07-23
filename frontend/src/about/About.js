@@ -1,185 +1,52 @@
 import { Link } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import ShoppingImage from "../landing/banner-0.jpg";
+import PaymentImage from "../landing/banner-1.jpg";
+import SupportImage from "../landing/banner-2.jpg";
+import ScrollToTopOnMount from "../template/ScrollToTopOnMount";
+import "./about-modern.css";
 
-function About() {
-  return (
-    <div className="about-page">
+const values = [
+  { number: "30+", label: "Sản phẩm chính hãng" },
+  { number: "8", label: "Đối tác phân phối" },
+  { number: "24/7", label: "Hỗ trợ khách hàng" },
+  { number: "100%", label: "Thông tin minh bạch" },
+];
 
-      {/* HERO */}
-      <section className="about-hero">
-        <div className="container">
+const features = [
+  { icon: "shopping-bag", eyebrow: "Trải nghiệm", title: "Mua sắm đơn giản", text: "Tìm kiếm thông minh, danh mục rõ ràng và dữ liệu tồn kho được cập nhật để bạn chọn nhanh hơn.", image: ShoppingImage },
+  { icon: "shield-alt", eyebrow: "An tâm", title: "Thanh toán minh bạch", text: "Quy trình rõ ràng, nhiều phương thức thanh toán và lịch sử đơn hàng dễ dàng theo dõi.", image: PaymentImage },
+  { icon: "headset", eyebrow: "Đồng hành", title: "Hỗ trợ đúng lúc", text: "Đội ngũ ElectroShop sẵn sàng tư vấn sản phẩm phù hợp trước, trong và sau khi mua.", image: SupportImage },
+];
 
-          <span className="about-tag">
-            Về E-Shop
-          </span>
-
-          <h1>
-            Đơn giản.<br />
-            Hiện đại.<br />
-            Đáng tin cậy.
-          </h1>
-
-          <p>
-            E-Shop mang đến trải nghiệm mua sắm công nghệ
-            nhanh chóng, trực quan và an toàn cho mọi khách hàng.
-          </p>
-
-          <Link className="about-button" to="/products">
-            Khám phá sản phẩm
-          </Link>
-
+export default function About() {
+  return <main className="modern-about"><ScrollToTopOnMount/>
+    <section className="modern-about-hero">
+      <div className="about-grid-bg" aria-hidden="true"/>
+      <div className="container modern-about-layout">
+        <div className="modern-about-copy">
+          <span className="modern-about-label"><i/> VỀ ELECTROSHOP</span>
+          <h1>Công nghệ tốt hơn.<br/><em>Trải nghiệm gần hơn.</em></h1>
+          <p>Chúng tôi xây dựng một không gian mua sắm công nghệ hiện đại, nơi sản phẩm, giá bán và tồn kho đều rõ ràng trong từng lựa chọn.</p>
+          <div className="modern-about-actions"><Link to="/products">Khám phá sản phẩm <FontAwesomeIcon icon={["fas","arrow-right"]}/></Link><Link to="/contact" className="secondary">Liên hệ với chúng tôi</Link></div>
+          <div className="about-trust"><span><FontAwesomeIcon icon={["fas","check-circle"]}/> Hàng chính hãng</span><span><FontAwesomeIcon icon={["fas","check-circle"]}/> Bảo hành rõ ràng</span></div>
         </div>
-      </section>
-
-      {/* CARD 1 */}
-
-      <section className="about-wrapper">
-
-        <div className="container">
-
-          <div className="about-card">
-
-            <div className="about-image">
-
-              <img
-                src="/images/about/shopping.jpg"
-                alt="Shopping"
-              />
-
-            </div>
-
-            <div className="about-content">
-
-              <span>Mua sắm</span>
-
-              <h2>
-                Mua sắm dễ dàng.
-              </h2>
-
-              <p>
-                Với giao diện trực quan và thân thiện,
-                E-Shop giúp bạn tìm kiếm, so sánh và lựa
-                chọn sản phẩm chỉ trong vài thao tác.
-              </p>
-
-            </div>
-
-          </div>
-                    {/* CARD 2 */}
-
-          <div className="about-card reverse">
-
-            <div className="about-content">
-
-              <span>Thanh toán</span>
-
-              <h2>
-                Thanh toán an toàn.
-              </h2>
-
-              <p>
-                Hỗ trợ nhiều phương thức thanh toán với quy trình
-                bảo mật và nhanh chóng, giúp bạn yên tâm trong
-                mọi giao dịch.
-              </p>
-
-            </div>
-
-            <div className="about-image">
-
-              <img
-                src="/images/about/payment.jpg"
-                alt="Payment"
-              />
-
-            </div>
-
-          </div>
-
-
-          {/* CARD 3 */}
-
-          <div className="about-card">
-
-            <div className="about-image">
-
-              <img
-                src="/images/about/support.jpg"
-                alt="Support"
-              />
-
-            </div>
-
-            <div className="about-content">
-
-              <span>Hỗ trợ</span>
-
-              <h2>
-                Luôn sẵn sàng đồng hành.
-              </h2>
-
-              <p>
-                Đội ngũ chăm sóc khách hàng của E-Shop luôn
-                sẵn sàng hỗ trợ, giải đáp mọi thắc mắc và
-                mang đến trải nghiệm mua sắm tốt nhất.
-              </p>
-
-            </div>
-
-          </div>
-
+        <div className="about-square-stage" aria-label="Không gian công nghệ ElectroShop">
+          <div className="about-square-glow"/>
+          <div className="about-square about-square-main"><img src={ShoppingImage} alt="Không gian mua sắm ElectroShop"/><span>EXPLORE<br/><b>TECH</b></span></div>
+          <div className="about-square about-square-back"/>
+          <div className="about-square about-square-small one"><FontAwesomeIcon icon={["fas","microchip"]}/></div>
+          <div className="about-square about-square-small two"><FontAwesomeIcon icon={["fas","mobile-alt"]}/></div>
+          <div className="about-square about-square-small three"><FontAwesomeIcon icon={["fas","laptop"]}/></div>
+          <div className="about-orbit orbit-one"/><div className="about-orbit orbit-two"/>
         </div>
+      </div>
+    </section>
 
-      </section>
+    <section className="about-values"><div className="container about-values-grid">{values.map((item,index)=><article key={item.label} style={{"--value-delay":`${index*80}ms`}}><strong>{item.number}</strong><span>{item.label}</span></article>)}</div></section>
 
+    <section className="modern-about-story"><div className="container"><div className="about-section-heading"><span>CÁCH CHÚNG TÔI TẠO KHÁC BIỆT</span><h2>Mọi chi tiết đều hướng đến<br/>một trải nghiệm dễ dàng.</h2></div><div className="modern-feature-list">{features.map((item,index)=><article className={`modern-feature ${index%2?"reverse":""}`} key={item.title}><div className="modern-feature-image"><img src={item.image} alt={item.title}/><span>0{index+1}</span></div><div className="modern-feature-copy"><i><FontAwesomeIcon icon={["fas",item.icon]}/></i><small>{item.eyebrow}</small><h3>{item.title}</h3><p>{item.text}</p><Link to={index===2?"/contact":"/products"}>Tìm hiểu thêm <FontAwesomeIcon icon={["fas","arrow-right"]}/></Link></div></article>)}</div></div></section>
 
-      {/* CONTACT */}
-
-      <section className="about-contact">
-
-        <div className="container">
-
-          <h2>Liên hệ</h2>
-
-          <div className="contact-grid">
-
-            <div className="contact-item">
-
-              <h4>Địa chỉ</h4>
-
-              <p>
-                Hà Nội, Việt Nam
-              </p>
-
-            </div>
-
-            <div className="contact-item">
-
-              <h4>Điện thoại</h4>
-
-              <p>
-                0123 456 789
-              </p>
-
-            </div>
-
-            <div className="contact-item">
-
-              <h4>Email</h4>
-
-              <p>
-                support@eshop.vn
-              </p>
-
-            </div>
-
-          </div>
-
-        </div>
-
-      </section>
-
-    </div>
-  );
+    <section className="modern-about-cta"><div className="about-cta-square one"/><div className="about-cta-square two"/><div className="container"><span>SẴN SÀNG KHÁM PHÁ?</span><h2>Tìm thiết bị phù hợp<br/>với bạn ngay hôm nay.</h2><Link to="/products">Xem tất cả sản phẩm <FontAwesomeIcon icon={["fas","arrow-right"]}/></Link></div></section>
+  </main>;
 }
-
-export default About;

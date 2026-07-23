@@ -5,18 +5,16 @@ export declare class ProductsController {
     getAllProducts(): Promise<any>;
     getProductDetail(id: string): Promise<any>;
     logProductView(body: {
-        userId: number;
         productId: number;
-    }): Promise<any>;
+    }, req: any): Promise<any>;
     getRecommendations(id: string): Promise<any>;
     getProductReviews(id: string): Promise<any>;
     createProductReview(id: string, body: {
-        userId: number;
         rating: number;
         title?: string;
         content?: string;
         orderId?: number;
-    }): Promise<{
+    }, req: any): Promise<{
         insertId: any;
     }>;
 }

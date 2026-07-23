@@ -15,6 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.ProductsController = void 0;
 const common_1 = require("@nestjs/common");
 const products_service_1 = require("./products.service");
+const jwt_auth_guard_1 = require("../security/jwt-auth.guard");
 let ProductsController = class ProductsController {
     productsService;
     constructor(productsService) {
@@ -24,10 +25,10 @@ let ProductsController = class ProductsController {
         return await this.productsService.findAll();
     }
     async getProductDetail(id) {
-        return await this.productsService.findOne(Number(id));
+        return await this.productsService.findOne(id);
     }
-    async logProductView(body) {
-        return await this.productsService.logView(body.userId, body.productId);
+    async logProductView(body, req) {
+        return await this.productsService.logView(req.user.id, body.productId);
     }
     async getRecommendations(id) {
         return await this.productsService.getRecommendedProducts(Number(id));
@@ -35,8 +36,8 @@ let ProductsController = class ProductsController {
     async getProductReviews(id) {
         return await this.productsService.getReviews(Number(id));
     }
-    async createProductReview(id, body) {
-        return await this.productsService.createReview(Number(id), body.userId, body.rating, body.title ?? '', body.content ?? '', body.orderId ?? null);
+    async createProductReview(id, body, req) {
+        return await this.productsService.createReview(Number(id), req.user.id, body.rating, body.title ?? '', body.content ?? '', body.orderId ?? null);
     }
 };
 exports.ProductsController = ProductsController;
@@ -55,9 +56,11 @@ __decorate([
 ], ProductsController.prototype, "getProductDetail", null);
 __decorate([
     (0, common_1.Post)('log-view'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object]),
+    __metadata("design:paramtypes", [Object, Object]),
     __metadata("design:returntype", Promise)
 ], ProductsController.prototype, "logProductView", null);
 __decorate([
@@ -76,10 +79,12 @@ __decorate([
 ], ProductsController.prototype, "getProductReviews", null);
 __decorate([
     (0, common_1.Post)(':id/reviews'),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
+    __param(2, (0, common_1.Req)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, Object, Object]),
     __metadata("design:returntype", Promise)
 ], ProductsController.prototype, "createProductReview", null);
 exports.ProductsController = ProductsController = __decorate([

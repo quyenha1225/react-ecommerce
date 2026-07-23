@@ -1,10 +1,9 @@
 import { Link, useParams } from "react-router-dom";
 import Product from "./Product";
 import ProductH from "./ProductH";
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import ScrollToTopOnMount from "../template/ScrollToTopOnMount";
-import { addToCart } from "../utils/cartStorage";
 
 const categories = [
   { name: "Tất cả sản phẩm", slug: "all" },
@@ -16,96 +15,6 @@ const categories = [
 ];
 
 const brands = ["Apple", "Samsung", "Asus", "Dell", "Lenovo", "Xiaomi"];
-
-const productCatalog = [
-  {
-    id: 1,
-    name: "Nillkin iPhone X cover",
-    category: "Phụ kiện",
-    price: 10000000,
-    percentOff: 15,
-    rating: 4.8,
-    sold: "1.2k",
-  },
-  {
-    id: 2,
-    name: "Tai nghe Bluetooth Air Pro",
-    category: "Phụ kiện",
-    price: 1290000,
-    percentOff: 10,
-    rating: 4.7,
-    sold: "860",
-  },
-  {
-    id: 3,
-    name: "Laptop Gaming GTX Edition",
-    category: "Laptop",
-    price: 24990000,
-    percentOff: 12,
-    rating: 4.9,
-    sold: "420",
-  },
-  {
-    id: 4,
-    name: "Samsung Galaxy Smart Case",
-    category: "Điện thoại",
-    price: 690000,
-    rating: 4.6,
-    sold: "740",
-  },
-  {
-    id: 5,
-    name: "Bàn phím cơ RGB Compact",
-    category: "Phụ kiện",
-    price: 1590000,
-    percentOff: 18,
-    rating: 4.8,
-    sold: "1k",
-  },
-  {
-    id: 6,
-    name: "Màn hình 27 inch IPS",
-    category: "Màn hình",
-    price: 4990000,
-    percentOff: 8,
-    rating: 4.7,
-    sold: "310",
-  },
-  { 
-    id: 7,
-    name: "Chuột không dây Silent",
-    category: "Phụ kiện",
-    price: 490000,
-    rating: 4.5,
-    sold: "2.1k",
-  },
-  {
-    id: 8,
-    name: "SSD NVMe 1TB Gen 4",
-    category: "Linh kiện PC",
-    price: 2290000,
-    percentOff: 14,
-    rating: 4.9,
-    sold: "620",
-  },
-  {
-    id: 9,
-    name: "Sạc nhanh USB-C 65W",
-    category: "Phụ kiện",
-    price: 590000,
-    percentOff: 20,
-    rating: 4.6,
-    sold: "1.6k",
-  },
-  { 
-    id: 10,
-    name: "Laptop Ultrabook Slim 14",
-    category: "Laptop",
-    price: 18990000,
-    rating: 4.8,
-    sold: "270",
-  },
-];
 
 function FilterMenuLeft() {
   return (
@@ -179,10 +88,33 @@ function ProductList() {
   const [selectedBrand, setSelectedBrand] = useState("Thương hiệu");
 
   const [selectedPrice, setSelectedPrice] = useState("Khoảng giá");
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`${process.env.REACT_APP_API_URL || "http://localhost:3001/api"}/products`, { signal: controller.signal })
+      .then(response => { if (!response.ok) throw new Error("Không tải được sản phẩm từ backend"); return response.json(); })
+      .then(data => setProducts((Array.isArray(data) ? data : data.data || []).map(item => ({
+        ...item,
+        id: Number(item.id),
+        price: Number(item.price || 0),
+        rating: Number(item.rating || 0),
+        percentOff: Number(item.percent_off || 0),
+        sold: Number(item.sold || 0),
+      }))))
+      .catch(err => { if (err.name !== "AbortError") setError(err.message); })
+      .finally(() => setLoading(false));
+    return () => controller.abort();
+  }, []);
 
   const { categoryName } = useParams();
 
   const currentCategory = categories.find((item) => item.slug === categoryName);
+  const visibleProducts = useMemo(() => categoryName
+    ? products.filter(product => product.category === categoryName)
+    : products, [products, categoryName]);
 
   function changeViewType() {
     setViewType({
@@ -477,7 +409,9 @@ function ProductList() {
                 (viewType.grid ? "row-cols-xl-3" : "row-cols-xl-2")
               }
             >
-              {productCatalog.map((product, i) => {
+              {loading && <div className="col-12 py-5 text-center">Đang tải sản phẩm từ database...</div>}
+              {error && <div className="col-12 alert alert-danger">{error}</div>}
+              {!loading && !error && visibleProducts.map((product) => {
                 if (viewType.grid) {
                   return (
                     <Product
@@ -500,7 +434,7 @@ function ProductList() {
 
             <div className="d-flex align-items-center mt-auto">
               <span className="text-muted small d-none d-md-inline">
-                Hiển thị 10 trên 100 sản phẩm
+                Hiển thị {visibleProducts.length} sản phẩm
               </span>
 
               <nav aria-label="Page navigation example" className="ms-auto">

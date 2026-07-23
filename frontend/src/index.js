@@ -10,12 +10,13 @@ import { fas } from "@fortawesome/free-solid-svg-icons";
 import { far } from "@fortawesome/free-regular-svg-icons";
 import { fab } from "@fortawesome/free-brands-svg-icons";
 import { BrowserRouter as Router } from "react-router-dom";
+import { AuthProvider } from "./auth/AuthContext";
 library.add(fas, far, fab);
 
 const container = document.getElementById("root");
 const root = createRoot(container);
 root.render(
   <Router>
-    <App />
+    <AuthProvider><App /></AuthProvider>
   </Router>
 );

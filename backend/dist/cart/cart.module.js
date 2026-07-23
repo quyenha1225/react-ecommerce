@@ -10,13 +10,16 @@ exports.CartModule = void 0;
 const common_1 = require("@nestjs/common");
 const cart_service_1 = require("./cart.service");
 const cart_controller_1 = require("./cart.controller");
+const auth_module_1 = require("../auth/auth.module");
+const jwt_auth_guard_1 = require("../security/jwt-auth.guard");
 let CartModule = class CartModule {
 };
 exports.CartModule = CartModule;
 exports.CartModule = CartModule = __decorate([
     (0, common_1.Module)({
+        imports: [auth_module_1.AuthModule],
         controllers: [cart_controller_1.CartController],
-        providers: [cart_service_1.CartService],
+        providers: [cart_service_1.CartService, jwt_auth_guard_1.JwtAuthGuard],
     })
 ], CartModule);
 //# sourceMappingURL=cart.module.js.map

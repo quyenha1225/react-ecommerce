@@ -1,9 +1,12 @@
-import Banner from "./Banner";
 import ScrollToTopOnMount from "../template/ScrollToTopOnMount";
+import "./landing-premium.css";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom";
 import DealImage from "../nillkin-case.webp";
-import { useEffect, useMemo, useState } from "react";
+import PremiumImageOne from "../nillkin-case.webp";
+import PremiumImageTwo from "../nillkin-case.jpg";
+import PremiumImageThree from "../nillkin-case-1.jpg";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 const API_URL =
   process.env.REACT_APP_API_URL || "http://localhost:3001/api";
@@ -35,7 +38,111 @@ const categoryHighlights = [
   },
 ];
 
-const featuredPageSize = 6;
+const featuredPageSize = 8;
+const premiumShowcase = [
+  { image: PremiumImageOne, name: "Phụ kiện bảo vệ thế hệ mới", note: "Thiết kế chắc chắn với chiều sâu vật liệu nổi bật." },
+  { image: PremiumImageTwo, name: "Phong cách công nghệ hiện đại", note: "Hoàn thiện tinh tế, bền bỉ và tối giản trong từng đường nét." },
+  { image: PremiumImageThree, name: "Sẵn sàng cho mọi chuyển động", note: "Phiên bản cá tính dành cho người yêu công nghệ khác biệt." },
+];
+const flipDuration = 1400;
+
+function PremiumIntro({ products }) {
+  const [activeIndex, setActiveIndex] = useState(0);
+  const [isFlipping, setIsFlipping] = useState(false);
+  const [direction, setDirection] = useState("right");
+  const swapTimer = useRef(null);
+  const finishTimer = useRef(null);
+  const autoTimer = useRef(null);
+  const animationLock = useRef(false);
+  const showcaseProducts = useMemo(() => {
+    const available = products.filter(product => product.imageUrl).slice(0, 10).map(product => ({
+      image: product.imageUrl,
+      name: product.name,
+      note: `${product.brand || product.category} · Sản phẩm nổi bật tại ElectroShop`,
+      price: product.price,
+      category: product.category,
+      slug: product.slug,
+    }));
+    return available.length ? available : premiumShowcase.map((item,index) => ({...item,price:0,category:"Phụ kiện",slug:String(index + 1)}));
+  }, [products]);
+  const activeProduct = showcaseProducts[activeIndex % showcaseProducts.length];
+
+  useEffect(() => () => {
+    window.clearTimeout(swapTimer.current);
+    window.clearTimeout(finishTimer.current);
+    window.clearTimeout(autoTimer.current);
+  }, []);
+
+  const flipProduct = useCallback(() => {
+    if (animationLock.current) return;
+    animationLock.current = true;
+    setIsFlipping(true);
+    setDirection((current) => current === "right" ? "left" : "right");
+    swapTimer.current = window.setTimeout(() => {
+      setActiveIndex((index) => (index + 1) % showcaseProducts.length);
+    }, flipDuration / 2);
+    finishTimer.current = window.setTimeout(() => {
+      animationLock.current = false;
+      setIsFlipping(false);
+    }, flipDuration);
+  }, [showcaseProducts.length]);
+
+  useEffect(() => {
+    if (isFlipping) return undefined;
+    autoTimer.current = window.setTimeout(flipProduct, 3200);
+    return () => window.clearTimeout(autoTimer.current);
+  }, [activeIndex, isFlipping, flipProduct]);
+
+  function handleKeyDown(event) {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      flipProduct();
+    }
+  }
+
+  return (
+    <section className="premium-intro" aria-labelledby="premium-title">
+      <div className="premium-space-orb premium-space-orb-one" />
+      <div className="premium-space-orb premium-space-orb-two" />
+      <header className="premium-intro-copy">
+        <span className="premium-kicker">Công nghệ chuyển động cùng bạn</span>
+        <h1 id="premium-title">Khám phá sản phẩm <span>theo cách sống động hơn</span></h1>
+        <p>Sản phẩm tự động chuyển động và thay đổi để bạn khám phá trọn vẹn từng thiết kế.</p>
+      </header>
+      <div className={`premium-live-scene premium-layout-${direction} ${isFlipping ? "is-flipping" : ""}`}>
+      <div
+        className={`premium-stage premium-slide-${direction} ${isFlipping ? "is-flipping" : ""}`}
+        role="button"
+        tabIndex="0"
+        aria-label={`Đổi sản phẩm, hiện tại là ${activeProduct.name}`}
+        aria-busy={isFlipping}
+        onClick={flipProduct}
+        onKeyDown={handleKeyDown}
+        onAnimationEnd={() => { animationLock.current = false; setIsFlipping(false); }}
+      >
+        <div className="premium-stage-glow" />
+        <article className="premium-3d-card">
+          <img key={activeProduct.image} src={activeProduct.image} alt={activeProduct.name} draggable="false" />
+          <div className="premium-card-shine" />
+          <div className="premium-card-label"><span>{activeProduct.category || "ElectroShop Selection"}</span><strong>{String(activeIndex + 1).padStart(2, "0")}</strong></div>
+        </article>
+        <span className="premium-click-hint"><i /> Nhấn để đổi sản phẩm</span>
+      </div>
+      <div className="premium-info-stage">
+      <div key={activeProduct.name} className="premium-product-copy">
+        <span className="premium-scene-category">{activeProduct.category}</span>
+        <span>{String(activeIndex + 1).padStart(2, "0")} / {String(showcaseProducts.length).padStart(2, "0")}</span>
+        <h2>{activeProduct.name}</h2>
+        <p>{activeProduct.note}</p>
+        {activeProduct.price > 0 && <strong className="premium-live-price">{formatPrice(activeProduct.price)} đ</strong>}
+        <div className="premium-dots">{showcaseProducts.map((product, index) => <i key={`${product.slug}-${index}`} className={index === activeIndex ? "active" : ""} />)}</div>
+        <Link to={`/products/${activeProduct.slug}`} className="premium-contact-cta"><span>Mua ngay</span><b>→</b></Link>
+      </div>
+      </div>
+      </div>
+    </section>
+  );
+}
 
 function normalizeProduct(item) {
   const imageUrl =
@@ -199,7 +306,7 @@ function Landing() {
     <>
       <ScrollToTopOnMount />
 
-      <Banner />
+      <PremiumIntro products={products} />
 
       {/* SẢN PHẨM NỔI BẬT */}
       <section className="home-products home-products-priority home-tech-grid">
@@ -257,7 +364,7 @@ function Landing() {
               Chưa có sản phẩm trong database.
             </div>
           ) : (
-            <div className="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            <div className="row row-cols-1 row-cols-sm-2 row-cols-lg-4 g-4">
               {featuredProductsOnPage.map(
                 (product, index) => (
                   <div
@@ -298,11 +405,10 @@ function Landing() {
                           </span>
 
                           <span>
-                            <FontAwesomeIcon
-                              icon={["fas", "star"]}
-                            />
-
-                            {product.rating.toFixed(1)}
+                            <span className="home-rating-stars" aria-label={`${product.rating.toFixed(1)} trên 5 sao`}>
+                              {[1,2,3,4,5].map(star => <FontAwesomeIcon key={star} icon={[star <= Math.round(product.rating) ? "fas" : "far", "star"]}/>)}
+                            </span>
+                            <b>{product.rating.toFixed(1)}</b>
                           </span>
                         </div>
 
@@ -426,6 +532,26 @@ function Landing() {
             )}
         </div>
       </section>
+
+      {/* SẢN PHẨM ƯU ĐÃI */}
+      {!loading && !error && products.length > 0 && (
+        <section className="home-offer-products">
+          <div className="container px-lg-5">
+            <div className="home-offer-heading">
+              <div><span className="home-intro-eyebrow">Giá tốt trong hôm nay</span><h2>Sản phẩm đang được ưu đãi</h2><p>Những lựa chọn nổi bật với mức giá hấp dẫn và số lượng có hạn.</p></div>
+              <Link to="/products" className="home-offer-link">Xem tất cả <FontAwesomeIcon icon={["fas","arrow-right"]}/></Link>
+            </div>
+            <div className="home-offer-grid">
+              {(products.filter(item => item.percentOff > 0).length ? products.filter(item => item.percentOff > 0) : products).slice(0, 4).map((product, index) => (
+                <Link to={`/products/${product.slug}`} className="home-offer-card" key={product.id} style={{"--offer-index":index}}>
+                  <div className="home-offer-image"><img src={product.imageUrl} alt={product.name} loading="lazy" onError={event => { event.currentTarget.src="https://placehold.co/600x600?text=ElectroShop"; }}/><span>{product.percentOff > 0 ? `-${product.percentOff}%` : "Giá tốt"}</span></div>
+                  <div className="home-offer-info"><small>{product.brand || product.category}</small><h3>{product.name}</h3><strong>{formatPrice(product.price)} đ</strong><span className="home-offer-cta">Xem ưu đãi <FontAwesomeIcon icon={["fas","arrow-right"]}/></span></div>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* KHUYẾN MÃI */}
       <section className="home-deal-spotlight">

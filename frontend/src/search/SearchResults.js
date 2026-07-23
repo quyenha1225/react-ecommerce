@@ -1,0 +1,25 @@
+import { useEffect, useState } from "react";
+import { Link, useSearchParams } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import ScrollToTopOnMount from "../template/ScrollToTopOnMount";
+import { addToCart } from "../utils/cartStorage";
+import "./search-results.css";
+import "./search-results-premium.css";
+
+const API=process.env.REACT_APP_API_URL||"http://localhost:3001/api";
+
+export default function SearchResults(){
+  const [params]=useSearchParams();const query=(params.get("q")||"").trim(),useAI=params.get("ai")==="1";
+  const [data,setData]=useState(null),[loading,setLoading]=useState(true),[error,setError]=useState(""),[addedProduct,setAddedProduct]=useState(null);
+  const addProduct=product=>{addToCart({id:product.id,name:product.name,brand:product.brand||product.category,price:Number(product.price),oldPrice:Number(product.price),image:product.image_url});setAddedProduct(product.id);window.setTimeout(()=>setAddedProduct(null),1200)};
+  useEffect(()=>{const controller=new AbortController();if(query.length<2){setError("Vui lòng nhập ít nhất 2 ký tự");setLoading(false);return()=>controller.abort()}setLoading(true);setError("");fetch(`${API}/ai/search`,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({query,useAI}),signal:controller.signal}).then(async response=>{const body=await response.json().catch(()=>({}));if(!response.ok)throw new Error(Array.isArray(body.message)?body.message.join(", "):body.message||"Không thể tìm kiếm");return body}).then(setData).catch(err=>{if(err.name!=="AbortError")setError(err.message)}).finally(()=>{if(!controller.signal.aborted)setLoading(false)});return()=>controller.abort()},[query,useAI]);
+  const summarySentences=String(data?.summary||"").match(/[^.!?]+[.!?]?/g)?.map(x=>x.trim()).filter(Boolean).slice(0,3)||[];
+  return <main className="search-page"><ScrollToTopOnMount/><section className="search-hero"><div className="container search-hero-inner"><div><span className="search-kicker"><FontAwesomeIcon icon={["fas",useAI?"magic":"search"]}/> {useAI?"AI SHOPPING ASSISTANT":"TÌM KIẾM SẢN PHẨM"}</span><h1>{useAI?"Chọn đúng sản phẩm, nhanh hơn":"Kết quả tìm kiếm"}</h1><p>Phân tích nhu cầu và đối chiếu trực tiếp với sản phẩm đang bán.</p></div><div className="search-query-card"><FontAwesomeIcon icon={["fas","quote-left"]}/><span>{query}</span></div></div></section><section className="container search-content">
+    {loading&&<div className="search-loading"><div className="ai-loader"><i/><i/><i/></div><h2>{useAI?"Đang chọn sản phẩm phù hợp":"Đang tìm trong danh mục"}</h2><p>Thường hoàn tất trong vài giây.</p></div>}
+    {error&&<div className="search-page-error"><FontAwesomeIcon icon={["fas","exclamation-circle"]}/><h2>Không thể trả kết quả</h2><p>{error}</p><Link to="/products">Xem tất cả sản phẩm</Link></div>}
+    {!loading&&!error&&data&&<><div className="search-result-heading"><div><span>{data.products?.length||0} SẢN PHẨM PHÙ HỢP</span><h2>{useAI?"Đề xuất tốt nhất":"Kết quả phù hợp nhất"}</h2><p>Ưu tiên đúng nhu cầu, giá hợp lý và còn hàng.</p></div><div className="search-result-meta">{Number.isFinite(data.latencyMs)&&<span><FontAwesomeIcon icon={["fas","bolt"]}/> {(data.latencyMs/1000).toFixed(1)} giây</span>}{useAI&&<b className={data.aiAvailable?"gemini-live":"gemini-fallback"}><i/>{data.aiAvailable?"Gemini":"Gợi ý nhanh"}</b>}</div></div>
+      {useAI&&data.summary&&<article className="search-advice"><div className="advice-heading"><div className="search-bot-icon"><FontAwesomeIcon icon={["fas","robot"]}/></div><div><small>TƯ VẤN NHANH</small><h3>Vì sao phù hợp với bạn?</h3></div></div><div className="advice-copy">{summarySentences.map((sentence,index)=><p key={index}>{sentence}</p>)}</div>{data.criteria?.length>0&&<div className="search-criteria">{data.criteria.map(item=><span key={item}><FontAwesomeIcon icon={["fas","check"]}/>{item}</span>)}</div>}</article>}
+      {data.products?.length?<div className="search-product-grid">{data.products.map((product,index)=><article className="search-product-card" key={product.id} style={{"--result-index":index}}><Link className="search-product-image" to={`/products/${product.slug||product.id}`}><img src={product.image_url} alt={product.name}/><span>{product.stock>0?`Còn ${product.stock}`:"Hết hàng"}</span></Link><div className="search-product-info"><small>{product.category}{product.brand?` · ${product.brand}`:""}</small><h3>{product.name}</h3><strong>{Number(product.price).toLocaleString("vi-VN")} ₫</strong><div><Link to={`/products/${product.slug||product.id}`}>Xem chi tiết</Link><button type="button" disabled={product.stock<=0} onClick={()=>addProduct(product)}><FontAwesomeIcon icon={["fas",addedProduct===product.id?"check":"cart-plus"]}/> {addedProduct===product.id?"Đã thêm":"Thêm giỏ"}</button></div></div></article>)}</div>:<div className="search-empty-page"><FontAwesomeIcon icon={["fas","search"]}/><h2>Chưa tìm thấy sản phẩm phù hợp</h2><p>Hãy thử mô tả nhu cầu hoặc mức ngân sách khác.</p></div>}
+    </>}
+  </section></main>;
+}

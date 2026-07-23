@@ -10,6 +10,7 @@ export class ProductsService {
     const query = `
       SELECT 
         p.product_id AS id, 
+        p.product_slug AS slug,
         p.product_name AS name, 
         p.base_price AS price, 
         c.category_slug AS category, 
@@ -18,10 +19,12 @@ export class ProductsService {
         0 AS percent_off,
         p.average_rating AS rating,
         p.review_count AS reviewCount
+        ,COALESCE(bs.total_sold, 0) AS sold
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.category_id
       LEFT JOIN brands b ON p.brand_id = b.brand_id
       LEFT JOIN product_images pi ON p.product_id = pi.product_id AND pi.is_thumbnail = TRUE
+      LEFT JOIN vw_best_selling_products bs ON bs.product_id = p.product_id
       WHERE p.product_status = 'ACTIVE'
     `;
 
@@ -31,7 +34,8 @@ export class ProductsService {
 
   // Chi tiet 1 san pham - dung cho ProductDetail.jsx (them rating/reviewCount)
 // Chi tiet 1 san pham - dung cho ProductDetail.jsx (them rating/reviewCount, specifications, variants)
-  async findOne(productId: number) {
+  async findOne(identifier: string | number) {
+    const numericId = Number(identifier);
     // 1. Lấy thông tin cơ bản của sản phẩm (Kèm theo Tổng tồn kho từ View)
     const rows = await this.dataSource.query(
       `
@@ -53,10 +57,10 @@ export class ProductsService {
       LEFT JOIN brands b ON p.brand_id = b.brand_id
       LEFT JOIN product_images pi ON p.product_id = pi.product_id AND pi.is_thumbnail = TRUE
       LEFT JOIN vw_product_stock vs ON p.product_id = vs.product_id
-      WHERE p.product_id = ? AND p.product_status = 'ACTIVE'
+      WHERE (p.product_id = ? OR p.product_slug = ?) AND p.product_status = 'ACTIVE'
       LIMIT 1
       `,
-      [productId],
+      [Number.isFinite(numericId) ? numericId : -1, String(identifier)],
     );
 
     const product = rows[0];
@@ -78,7 +82,7 @@ export class ProductsService {
       WHERE pav.product_id = ?
       ORDER BY pa.display_order ASC
       `,
-      [productId],
+      [product.id],
     );
 
     // 3. Lấy danh sách Cấu hình/Phiên bản (Variants kèm theo Tồn kho của từng bản)
@@ -100,7 +104,7 @@ export class ProductsService {
       LEFT JOIN variant_inventory vi ON pv.variant_id = vi.variant_id
       WHERE pv.product_id = ? AND pv.variant_status = 'ACTIVE'
       `,
-      [productId],
+      [product.id],
     );
 
     // 4. Nhồi 2 mảng vừa lấy được vào trong object product ban đầu
@@ -113,18 +117,12 @@ export class ProductsService {
   async getRecommendedProducts(productId: number) {
     return await this.dataSource.query(
       `
-      SELECT p.product_id AS id, p.product_name AS name, p.base_price AS price, pi.image_url
+      SELECT p.product_id AS id, p.product_slug AS slug, p.product_name AS name, p.base_price AS price, pi.image_url
       FROM products p
-      JOIN product_images pi ON p.product_id = pi.product_id AND pi.is_thumbnail = TRUE
-      WHERE p.product_id IN (
-        SELECT DISTINCT product_id 
-        FROM user_view_history 
-        WHERE user_id IN (
-          SELECT user_id FROM user_view_history WHERE product_id = ?
-        ) 
-        AND product_id != ?
-      )
-      LIMIT 4; -- Lay toi da 4 san pham goi y
+      LEFT JOIN product_images pi ON p.product_id = pi.product_id AND pi.is_thumbnail = TRUE
+      WHERE p.category_id=(SELECT category_id FROM products WHERE product_id=?)
+        AND p.product_id<>? AND p.product_status='ACTIVE'
+      ORDER BY p.created_at DESC LIMIT 4
     `,
       [productId, productId],
     );

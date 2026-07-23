@@ -1,4 +1,3 @@
-import Image from "../nillkin-case-1.jpg";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
@@ -15,11 +14,12 @@ function formatCurrency(value) {
 function Product({ product = {}, percentOff }) {
   const [isAdded, setIsAdded] = useState(false);
 
-  const price = product.price || 10000000;
-  const productName = product.name || "Nillkin iPhone X cover";
-  const category = product.category || "Phụ kiện";
-  const rating = product.rating || 4.8;
-  const sold = product.sold || "1.2k";
+  const price = Number(product.price || 0);
+  const productName = product.name || "Sản phẩm";
+  const category = product.category || "Chưa phân loại";
+  const rating = Number(product.rating || 0);
+  const sold = product.sold || 0;
+  const imageUrl = product.image_url;
 
   const discount = percentOff || product.percentOff;
 
@@ -35,7 +35,7 @@ function Product({ product = {}, percentOff }) {
       price: finalPrice,
       oldPrice: price,
       quantity: 1,
-      image: Image,
+      image: imageUrl,
     });
 
     setIsAdded(true);
@@ -53,7 +53,7 @@ function Product({ product = {}, percentOff }) {
         }`}
       >
         <Link
-          to={`/products/${product.id}`}
+          to={`/products/${product.slug || product.id}`}
           className="eshop-product-media"
         >
           {discount ? (
@@ -67,7 +67,7 @@ function Product({ product = {}, percentOff }) {
           )}
 
           <img
-            src={Image}
+            src={imageUrl}
             alt={productName}
             className="card-img-top bg-dark cover"
           />
@@ -95,7 +95,7 @@ function Product({ product = {}, percentOff }) {
           </h5>
 
           <p className="eshop-product-desc">
-            Phụ kiện công nghệ bền đẹp, giao nhanh và bảo hành rõ ràng.
+            {product.brand ? `Thương hiệu ${product.brand}` : "Thông tin sản phẩm được đồng bộ từ hệ thống."}
           </p>
 
           <div className="eshop-product-price-row">
@@ -109,7 +109,7 @@ function Product({ product = {}, percentOff }) {
           <div className="eshop-product-actions">
 
             <Link
-              to={`/products/${product.id}`}
+              to={`/products/${product.slug || product.id}`}
               className="btn eshop-detail-btn"
             >
               Chi tiết

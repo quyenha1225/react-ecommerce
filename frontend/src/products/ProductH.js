@@ -1,8 +1,7 @@
-import Image from "../nillkin-case-1.jpg";
 import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
-import { addProductToCart } from "../utils/cartEvents";
+import { addToCart } from "../utils/cartStorage";
 
 function formatCurrency(value) {
   return new Intl.NumberFormat("vi-VN", {
@@ -15,18 +14,18 @@ function formatCurrency(value) {
 function ProductH(props) {
   const [isAdded, setIsAdded] = useState(false);
   const product = props.product || {};
-  const price = product.price || 10000000;
-  const productName = product.name || "Nillkin iPhone X cover";
-  const category = product.category || "Phụ kiện";
-  const rating = product.rating || 4.8;
-  const sold = product.sold || "1.2k";
+  const price = Number(product.price || 0);
+  const productName = product.name || "Sản phẩm";
+  const category = product.category || "Chưa phân loại";
+  const rating = Number(product.rating || 0);
+  const sold = product.sold || 0;
   const percentOff = props.percentOff || product.percentOff;
   const finalPrice = percentOff
     ? price - (percentOff * price) / 100
     : price;
 
   function handleAddToCart() {
-    addProductToCart();
+    addToCart({id:product.id,name:productName,brand:product.brand||category,price:finalPrice,oldPrice:price,image:product.image_url});
     setIsAdded(true);
 
     window.setTimeout(() => {
@@ -39,14 +38,14 @@ function ProductH(props) {
       <article className={"card shadow-sm eshop-product-card eshop-product-card-horizontal " + (isAdded ? "is-added" : "")}>
         <div className="row g-0">
           <div className="col-4 eshop-product-horizontal-media-wrap">
-            <Link to="/products/1" className="eshop-product-media h-100" replace>
+            <Link to={`/products/${product.slug || product.id}`} className="eshop-product-media h-100">
               {percentOff ? (
                 <span className="eshop-product-sale-badge">-{percentOff}%</span>
               ) : null}
               <img
                 className="rounded-start bg-dark cover w-100 h-100"
                 alt={productName}
-                src={Image}
+                src={product.image_url}
               />
             </Link>
           </div>
@@ -75,7 +74,7 @@ function ProductH(props) {
                 </div>
 
                 <div className="mt-auto d-flex gap-2 justify-content-end">
-                  <Link to="/products/1" className="btn eshop-detail-btn" replace>
+                  <Link to={`/products/${product.slug || product.id}`} className="btn eshop-detail-btn">
                     Chi tiết
                   </Link>
                   <button

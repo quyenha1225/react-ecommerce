@@ -1,20 +1,23 @@
 import { Module } from '@nestjs/common';
 import { JwtModule } from '@nestjs/jwt';
-import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
-import { User } from '../users/entities/user.entity';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
-    JwtModule.register({
-      secret: process.env.JWT_SECRET || 'your_jwt_secret_key',
-      signOptions: { expiresIn: process.env.JWT_EXPIRATION || '7d' } as any,
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => {
+        const secret = config.get<string>('JWT_SECRET');
+        if (!secret || secret.length < 32) throw new Error('JWT_SECRET must contain at least 32 characters');
+        return { secret, signOptions: { expiresIn: config.get<string>('JWT_EXPIRATION') || '2h' } as any };
+      },
     }),
   ],
   controllers: [AuthController],
   providers: [AuthService],
-  exports: [AuthService],
+  exports: [AuthService, JwtModule],
 })
 export class AuthModule {}

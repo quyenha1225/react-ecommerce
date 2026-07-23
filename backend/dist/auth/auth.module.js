@@ -9,25 +9,29 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthModule = void 0;
 const common_1 = require("@nestjs/common");
 const jwt_1 = require("@nestjs/jwt");
-const typeorm_1 = require("@nestjs/typeorm");
 const auth_service_1 = require("./auth.service");
 const auth_controller_1 = require("./auth.controller");
-const user_entity_1 = require("../users/entities/user.entity");
+const config_1 = require("@nestjs/config");
 let AuthModule = class AuthModule {
 };
 exports.AuthModule = AuthModule;
 exports.AuthModule = AuthModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            typeorm_1.TypeOrmModule.forFeature([user_entity_1.User]),
-            jwt_1.JwtModule.register({
-                secret: process.env.JWT_SECRET || 'your_jwt_secret_key',
-                signOptions: { expiresIn: process.env.JWT_EXPIRATION || '7d' },
+            jwt_1.JwtModule.registerAsync({
+                imports: [config_1.ConfigModule],
+                inject: [config_1.ConfigService],
+                useFactory: (config) => {
+                    const secret = config.get('JWT_SECRET');
+                    if (!secret || secret.length < 32)
+                        throw new Error('JWT_SECRET must contain at least 32 characters');
+                    return { secret, signOptions: { expiresIn: config.get('JWT_EXPIRATION') || '2h' } };
+                },
             }),
         ],
         controllers: [auth_controller_1.AuthController],
         providers: [auth_service_1.AuthService],
-        exports: [auth_service_1.AuthService],
+        exports: [auth_service_1.AuthService, jwt_1.JwtModule],
     })
 ], AuthModule);
 //# sourceMappingURL=auth.module.js.map

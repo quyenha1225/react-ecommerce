@@ -41,77 +41,89 @@ var __importStar = (this && this.__importStar) || (function () {
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var __param = (this && this.__param) || function (paramIndex, decorator) {
-    return function (target, key) { decorator(target, key, paramIndex); }
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
-const typeorm_1 = require("@nestjs/typeorm");
-const typeorm_2 = require("typeorm");
+const typeorm_1 = require("typeorm");
 const jwt_1 = require("@nestjs/jwt");
 const bcrypt = __importStar(require("bcrypt"));
-const user_entity_1 = require("../users/entities/user.entity");
 let AuthService = class AuthService {
-    usersRepository;
     jwtService;
-    constructor(usersRepository, jwtService) {
-        this.usersRepository = usersRepository;
+    dataSource;
+    attempts = new Map();
+    constructor(jwtService, dataSource) {
         this.jwtService = jwtService;
+        this.dataSource = dataSource;
     }
     async register(createUserDto) {
-        const { name, email, password } = createUserDto;
-        const existingUser = await this.usersRepository.findOne({
-            where: { user_email: email },
-        });
-        if (existingUser) {
+        const { name, password } = createUserDto;
+        const email = createUserDto.email.trim().toLowerCase();
+        const existingUsers = await this.dataSource.query(`SELECT user_id FROM users WHERE user_email = ? LIMIT 1`, [email]);
+        if (existingUsers[0]) {
             throw new common_1.BadRequestException('Email already exists');
         }
         const hashedPassword = await bcrypt.hash(password, 10);
-        const newUser = this.usersRepository.create({
-            user_full_name: name,
-            user_email: email,
-            password_hash: hashedPassword,
-            role_id: 2,
-            account_status: 'ACTIVE',
-        });
-        await this.usersRepository.save(newUser);
-        const token = this.jwtService.sign({
-            id: newUser.user_id,
-            email: newUser.user_email,
-        });
+        const customerRoles = await this.dataSource.query(`SELECT role_id FROM roles WHERE role_code = 'CUSTOMER' LIMIT 1`);
+        if (!customerRoles[0]) {
+            throw new common_1.BadRequestException('Customer role is not configured');
+        }
+        const result = await this.dataSource.query(`INSERT INTO users
+       (role_id, user_full_name, user_email, user_phone, password_hash, account_status)
+       VALUES (?, ?, ?, ?, ?, 'ACTIVE')`, [customerRoles[0].role_id, name, email, createUserDto.phone || null, hashedPassword]);
+        const userId = result.insertId;
+        const role = 'CUSTOMER';
+        const token = this.jwtService.sign({ id: userId, email, role });
         return {
             success: true,
             token,
             user: {
-                id: newUser.user_id,
-                name: newUser.user_full_name,
-                email: newUser.user_email,
+                id: userId,
+                name,
+                email, role,
             },
         };
     }
     async login(email, password) {
-        const user = await this.usersRepository.findOne({
-            where: { user_email: email },
-        });
+        email = email.trim().toLowerCase();
+        const now = Date.now();
+        const attempt = this.attempts.get(email);
+        if (attempt && attempt.resetAt > now && attempt.count >= 5) {
+            throw new common_1.UnauthorizedException('Too many attempts. Try again in 15 minutes');
+        }
+        const users = await this.dataSource.query(`SELECT user_id, role_id, user_full_name, user_email, password_hash, account_status
+       FROM users WHERE user_email = ? LIMIT 1`, [email]);
+        const user = users[0];
         if (!user) {
+            this.recordFailure(email, now);
             throw new common_1.UnauthorizedException('Invalid email or password');
+        }
+        if (user.account_status !== 'ACTIVE') {
+            throw new common_1.UnauthorizedException('Account is not active');
         }
         const isPasswordValid = await bcrypt.compare(password, user.password_hash);
         if (!isPasswordValid) {
+            this.recordFailure(email, now);
+            await this.logLogin(user.user_id, 'FAILED');
             throw new common_1.UnauthorizedException('Invalid email or password');
         }
-        const token = this.jwtService.sign({
-            id: user.user_id,
-            email: user.user_email,
-        });
+        this.attempts.delete(email);
+        await this.logLogin(user.user_id, 'SUCCESS');
+        const roleRows = await this.dataSource.query(`SELECT r.role_code, COALESCE(JSON_ARRAYAGG(p.permission_code), JSON_ARRAY()) permissions
+       FROM roles r
+       LEFT JOIN role_permissions rp ON rp.role_id = r.role_id
+       LEFT JOIN permissions p ON p.permission_id = rp.permission_id
+       WHERE r.role_id = ? GROUP BY r.role_id, r.role_code`, [user.role_id]);
+        const role = roleRows[0]?.role_code || 'CUSTOMER';
+        const permissions = typeof roleRows[0]?.permissions === 'string'
+            ? JSON.parse(roleRows[0].permissions) : (roleRows[0]?.permissions || []);
+        const token = this.jwtService.sign({ id: user.user_id, email: user.user_email, role, permissions });
         return {
             success: true,
             token,
             user: {
                 id: user.user_id,
                 name: user.user_full_name,
-                email: user.user_email,
+                email: user.user_email, role, permissions,
             },
         };
     }
@@ -124,12 +136,22 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException('Invalid token');
         }
     }
+    recordFailure(email, now) {
+        const current = this.attempts.get(email);
+        this.attempts.set(email, current && current.resetAt > now
+            ? { ...current, count: current.count + 1 }
+            : { count: 1, resetAt: now + 15 * 60 * 1000 });
+    }
+    async logLogin(userId, status) {
+        await this.dataSource.query(`INSERT INTO login_logs(user_id, login_status) VALUES(?, ?)`, [userId, status]);
+        await this.dataSource.query(`INSERT INTO audit_logs(actor_user_id, action_name, affected_table_name, affected_record_id, action_description)
+       VALUES(?, ?, 'users', ?, ?)`, [userId, status === 'SUCCESS' ? 'LOGIN_SUCCESS' : 'LOGIN_FAILED', userId, JSON.stringify({ status })]);
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
-    __param(0, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
-    __metadata("design:paramtypes", [typeorm_2.Repository,
-        jwt_1.JwtService])
+    __metadata("design:paramtypes", [jwt_1.JwtService,
+        typeorm_1.DataSource])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map
