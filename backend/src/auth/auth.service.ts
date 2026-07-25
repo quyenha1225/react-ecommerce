@@ -60,7 +60,7 @@ export class AuthService implements OnModuleInit {
         '✅ Auto-seed Admin thành công: admin1@gmail.com / Admin1234',
       );
     } catch (error) {
-      console.error('❌ Lỗi Auto-seed Admin:', error.message);
+      console.error('❌ Lỗi Auto-seed Admin:', (error as any).message);
     }
   }
 
