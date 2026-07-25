@@ -1,16 +1,68 @@
-import { Injectable, BadRequestException, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  UnauthorizedException,
+  OnModuleInit,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 
 @Injectable()
-export class AuthService {
-  private readonly attempts = new Map<string, { count: number; resetAt: number }>();
+export class AuthService implements OnModuleInit {
+  private readonly attempts = new Map<
+    string,
+    { count: number; resetAt: number }
+  >();
+
   constructor(
     private jwtService: JwtService,
     private dataSource: DataSource,
   ) {}
+
+  // TỰ ĐỘNG TẠO/CẬP NHẬT TÀI KHOẢN ADMIN KHI BACKEND KHỞI ĐỘNG
+  async onModuleInit() {
+    try {
+      const adminEmail = 'admin1@gmail.com';
+      const adminPass = 'Admin1234';
+      const hashedPassword = await bcrypt.hash(adminPass, 10);
+
+      // Lấy role_id của ADMIN
+      const adminRoles = await this.dataSource.query(
+        `SELECT role_id FROM roles WHERE role_code = 'ADMIN' LIMIT 1`,
+      );
+      if (!adminRoles[0]) return;
+
+      const roleId = adminRoles[0].role_id;
+
+      // Kiểm tra tài khoản đã tồn tại chưa
+      const existingUsers = await this.dataSource.query(
+        `SELECT user_id FROM users WHERE user_email = ? LIMIT 1`,
+        [adminEmail],
+      );
+
+      if (existingUsers[0]) {
+        // Nếu đã có -> Đè lại mật khẩu hash chuẩn + cấp quyền ADMIN
+        await this.dataSource.query(
+          `UPDATE users SET password_hash = ?, role_id = ?, account_status = 'ACTIVE' WHERE user_email = ?`,
+          [hashedPassword, roleId, adminEmail],
+        );
+      } else {
+        // Nếu chưa có -> Tạo mới hoàn toàn với SĐT riêng không trùng
+        await this.dataSource.query(
+          `INSERT INTO users (role_id, user_full_name, user_email, user_phone, password_hash, account_status)
+           VALUES (?, 'Administrator', ?, '0999999999', ?, 'ACTIVE')`,
+          [roleId, adminEmail, hashedPassword],
+        );
+      }
+      console.log(
+        '✅ Auto-seed Admin thành công: admin1@gmail.com / Admin1234',
+      );
+    } catch (error) {
+      console.error('❌ Lỗi Auto-seed Admin:', error.message);
+    }
+  }
 
   async register(createUserDto: CreateUserDto) {
     const { name, password } = createUserDto;
@@ -18,7 +70,8 @@ export class AuthService {
 
     // Check if user already exists
     const existingUsers = await this.dataSource.query(
-      `SELECT user_id FROM users WHERE user_email = ? LIMIT 1`, [email],
+      `SELECT user_id FROM users WHERE user_email = ? LIMIT 1`,
+      [email],
     );
 
     if (existingUsers[0]) {
@@ -28,19 +81,24 @@ export class AuthService {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Public registration is ALWAYS a customer. Never trust a role from the client
-    // and never rely on auto-increment ids because seed order may change.
     const customerRoles = await this.dataSource.query(
       `SELECT role_id FROM roles WHERE role_code = 'CUSTOMER' LIMIT 1`,
     );
     if (!customerRoles[0]) {
       throw new BadRequestException('Customer role is not configured');
     }
+
     const result = await this.dataSource.query(
       `INSERT INTO users
        (role_id, user_full_name, user_email, user_phone, password_hash, account_status)
        VALUES (?, ?, ?, ?, ?, 'ACTIVE')`,
-      [customerRoles[0].role_id, name, email, createUserDto.phone || null, hashedPassword],
+      [
+        customerRoles[0].role_id,
+        name,
+        email,
+        createUserDto.phone || null,
+        hashedPassword,
+      ],
     );
     const userId = result.insertId;
 
@@ -53,7 +111,8 @@ export class AuthService {
       user: {
         id: userId,
         name,
-        email, role,
+        email,
+        role,
       },
     };
   }
@@ -63,12 +122,16 @@ export class AuthService {
     const now = Date.now();
     const attempt = this.attempts.get(email);
     if (attempt && attempt.resetAt > now && attempt.count >= 5) {
-      throw new UnauthorizedException('Too many attempts. Try again in 15 minutes');
+      throw new UnauthorizedException(
+        'Too many attempts. Try again in 15 minutes',
+      );
     }
+
     // Find user by email
     const users = await this.dataSource.query(
       `SELECT user_id, role_id, user_full_name, user_email, password_hash, account_status
-       FROM users WHERE user_email = ? LIMIT 1`, [email],
+       FROM users WHERE user_email = ? LIMIT 1`,
+      [email],
     );
     const user = users[0];
 
@@ -102,9 +165,16 @@ export class AuthService {
       [user.role_id],
     );
     const role = roleRows[0]?.role_code || 'CUSTOMER';
-    const permissions = typeof roleRows[0]?.permissions === 'string'
-      ? JSON.parse(roleRows[0].permissions) : (roleRows[0]?.permissions || []);
-    const token = this.jwtService.sign({ id: user.user_id, email: user.user_email, role, permissions });
+    const permissions =
+      typeof roleRows[0]?.permissions === 'string'
+        ? JSON.parse(roleRows[0].permissions)
+        : roleRows[0]?.permissions || [];
+    const token = this.jwtService.sign({
+      id: user.user_id,
+      email: user.user_email,
+      role,
+      permissions,
+    });
 
     return {
       success: true,
@@ -112,7 +182,9 @@ export class AuthService {
       user: {
         id: user.user_id,
         name: user.user_full_name,
-        email: user.user_email, role, permissions,
+        email: user.user_email,
+        role,
+        permissions,
       },
     };
   }
@@ -128,19 +200,28 @@ export class AuthService {
 
   private recordFailure(email: string, now: number) {
     const current = this.attempts.get(email);
-    this.attempts.set(email, current && current.resetAt > now
-      ? { ...current, count: current.count + 1 }
-      : { count: 1, resetAt: now + 15 * 60 * 1000 });
+    this.attempts.set(
+      email,
+      current && current.resetAt > now
+        ? { ...current, count: current.count + 1 }
+        : { count: 1, resetAt: now + 15 * 60 * 1000 },
+    );
   }
 
   private async logLogin(userId: number, status: string) {
     await this.dataSource.query(
-      `INSERT INTO login_logs(user_id, login_status) VALUES(?, ?)`, [userId, status],
+      `INSERT INTO login_logs(user_id, login_status) VALUES(?, ?)`,
+      [userId, status],
     );
     await this.dataSource.query(
       `INSERT INTO audit_logs(actor_user_id, action_name, affected_table_name, affected_record_id, action_description)
        VALUES(?, ?, 'users', ?, ?)`,
-      [userId, status === 'SUCCESS' ? 'LOGIN_SUCCESS' : 'LOGIN_FAILED', userId, JSON.stringify({ status })],
+      [
+        userId,
+        status === 'SUCCESS' ? 'LOGIN_SUCCESS' : 'LOGIN_FAILED',
+        userId,
+        JSON.stringify({ status }),
+      ],
     );
   }
 }

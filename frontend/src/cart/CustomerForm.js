@@ -1,6 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useAuth } from "../auth/AuthContext";
 
 function CustomerForm({ onNext }) {
+  const { session } = useAuth(); // Lấy thông tin session từ AuthContext
+
   const [form, setForm] = useState({
     fullName: "",
     phone: "",
@@ -8,6 +11,45 @@ function CustomerForm({ onNext }) {
     address: "",
     note: "",
   });
+
+  useEffect(() => {
+    // 1. Kiểm tra nếu ĐÃ ĐĂNG NHẬP
+    if (session) {
+      const savedInfo = JSON.parse(localStorage.getItem("customer-info")) || {};
+      const user = session.user || session;
+
+      setForm({
+        fullName:
+          savedInfo.fullName ||
+          user.fullName ||
+          user.user_full_name ||
+          user.fullName ||
+          user.name ||
+          "",
+        // Thêm user.phone_number và user.phoneNumber vào kiểm tra
+        phone:
+          savedInfo.phone ||
+          user.phone ||
+          user.phone_number ||
+          user.phoneNumber ||
+          user.user_phone ||
+          "",
+        email: savedInfo.email || user.email || user.user_email || "",
+        address: savedInfo.address || "",
+        note: savedInfo.note || "",
+      });
+    } else {
+      // 2. Nếu CHƯA/ĐÃ ĐĂNG XUẤT -> Reset form
+      localStorage.removeItem("customer-info");
+      setForm({
+        fullName: "",
+        phone: "",
+        email: "",
+        address: "",
+        note: "",
+      });
+    }
+  }, [session]);
 
   function handleChange(e) {
     setForm({
@@ -19,20 +61,12 @@ function CustomerForm({ onNext }) {
   function handleSubmit(e) {
     e.preventDefault();
 
-    if (
-      !form.fullName ||
-      !form.phone ||
-      !form.email ||
-      !form.address
-    ) {
+    if (!form.fullName || !form.phone || !form.email || !form.address) {
       alert("Vui lòng nhập đầy đủ thông tin.");
       return;
     }
 
-    localStorage.setItem(
-      "customer-info",
-      JSON.stringify(form)
-    );
+    localStorage.setItem("customer-info", JSON.stringify(form));
 
     onNext();
   }
@@ -90,10 +124,7 @@ function CustomerForm({ onNext }) {
           Quay lại
         </button>
 
-        <button
-          type="submit"
-          className="btn btn-warning"
-        >
+        <button type="submit" className="btn btn-warning">
           Tiếp tục
         </button>
       </div>

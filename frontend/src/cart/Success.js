@@ -1,39 +1,33 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useState } from "react";
 
 function Success({ total, onHome }) {
-  const customer =
-    JSON.parse(localStorage.getItem("customer-info")) || {};
+  const customer = JSON.parse(localStorage.getItem("customer-info")) || {};
 
-  const payment =
-    localStorage.getItem("payment-method") || "cod";
+  const payment = localStorage.getItem("payment-method") || "cod";
 
-  const orderId =
-    "ESH" + Math.floor(Math.random() * 900000 + 100000);
+  // Sử dụng useState với callback để mã đơn hàng chỉ khởi tạo duy nhất 1 lần khi mount
+  const [orderId] = useState(
+    () => "ESH" + Math.floor(Math.random() * 900000 + 100000),
+  );
 
   const paymentName = {
-    cod: "Thanh toán khi nhận hàng",
-    bank: "Chuyển khoản ngân hàng",
-    momo: "Ví MoMo",
-    vnpay: "VNPay",
+    cod: "Thanh toán khi nhận hàng (COD)",
+    sepay: "Chuyển khoản SePay VietQR",
   };
 
   return (
     <div className="success-page">
-
       <div className="success-card">
-
         <div className="success-icon">
           <FontAwesomeIcon icon={["fas", "circle-check"]} />
         </div>
 
         <h2>Đặt hàng thành công!</h2>
 
-        <p>
-          Cảm ơn bạn đã mua sắm tại ElectroShop.
-        </p>
+        <p>Cảm ơn bạn đã mua sắm tại ElectroShop.</p>
 
         <div className="success-info">
-
           <div className="info-row">
             <span>Mã đơn hàng</span>
             <strong>{orderId}</strong>
@@ -41,42 +35,34 @@ function Success({ total, onHome }) {
 
           <div className="info-row">
             <span>Khách hàng</span>
-            <strong>{customer.fullName}</strong>
+            <strong>{customer.fullName || "Khách hàng"}</strong>
           </div>
 
           <div className="info-row">
             <span>Số điện thoại</span>
-            <strong>{customer.phone}</strong>
+            <strong>{customer.phone || "Chưa cung cấp"}</strong>
           </div>
 
           <div className="info-row">
             <span>Địa chỉ</span>
-            <strong>{customer.address}</strong>
+            <strong>{customer.address || "Chưa cung cấp"}</strong>
           </div>
 
           <div className="info-row">
             <span>Thanh toán</span>
-            <strong>{paymentName[payment]}</strong>
+            <strong>{paymentName[payment] || paymentName.cod}</strong>
           </div>
 
           <div className="info-row">
             <span>Tổng tiền</span>
-            <strong>
-              {total.toLocaleString("vi-VN")}đ
-            </strong>
+            <strong>{(total || 0).toLocaleString("vi-VN")}đ</strong>
           </div>
-
         </div>
 
-        <button
-          className="checkout-btn"
-          onClick={onHome}
-        >
+        <button className="checkout-btn" onClick={onHome}>
           Tiếp tục mua sắm
         </button>
-
       </div>
-
     </div>
   );
 }

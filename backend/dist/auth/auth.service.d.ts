@@ -1,11 +1,13 @@
+import { OnModuleInit } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
-export declare class AuthService {
+export declare class AuthService implements OnModuleInit {
     private jwtService;
     private dataSource;
     private readonly attempts;
     constructor(jwtService: JwtService, dataSource: DataSource);
+    onModuleInit(): Promise<void>;
     register(createUserDto: CreateUserDto): Promise<{
         success: boolean;
         token: string;

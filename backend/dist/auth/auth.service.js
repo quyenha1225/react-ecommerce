@@ -55,6 +55,29 @@ let AuthService = class AuthService {
         this.jwtService = jwtService;
         this.dataSource = dataSource;
     }
+    async onModuleInit() {
+        try {
+            const adminEmail = 'admin1@gmail.com';
+            const adminPass = 'Admin1234';
+            const hashedPassword = await bcrypt.hash(adminPass, 10);
+            const adminRoles = await this.dataSource.query(`SELECT role_id FROM roles WHERE role_code = 'ADMIN' LIMIT 1`);
+            if (!adminRoles[0])
+                return;
+            const roleId = adminRoles[0].role_id;
+            const existingUsers = await this.dataSource.query(`SELECT user_id FROM users WHERE user_email = ? LIMIT 1`, [adminEmail]);
+            if (existingUsers[0]) {
+                await this.dataSource.query(`UPDATE users SET password_hash = ?, role_id = ?, account_status = 'ACTIVE' WHERE user_email = ?`, [hashedPassword, roleId, adminEmail]);
+            }
+            else {
+                await this.dataSource.query(`INSERT INTO users (role_id, user_full_name, user_email, user_phone, password_hash, account_status)
+           VALUES (?, 'Administrator', ?, '0999999999', ?, 'ACTIVE')`, [roleId, adminEmail, hashedPassword]);
+            }
+            console.log('✅ Auto-seed Admin thành công: admin1@gmail.com / Admin1234');
+        }
+        catch (error) {
+            console.error('❌ Lỗi Auto-seed Admin:', error.message);
+        }
+    }
     async register(createUserDto) {
         const { name, password } = createUserDto;
         const email = createUserDto.email.trim().toLowerCase();
@@ -69,7 +92,13 @@ let AuthService = class AuthService {
         }
         const result = await this.dataSource.query(`INSERT INTO users
        (role_id, user_full_name, user_email, user_phone, password_hash, account_status)
-       VALUES (?, ?, ?, ?, ?, 'ACTIVE')`, [customerRoles[0].role_id, name, email, createUserDto.phone || null, hashedPassword]);
+       VALUES (?, ?, ?, ?, ?, 'ACTIVE')`, [
+            customerRoles[0].role_id,
+            name,
+            email,
+            createUserDto.phone || null,
+            hashedPassword,
+        ]);
         const userId = result.insertId;
         const role = 'CUSTOMER';
         const token = this.jwtService.sign({ id: userId, email, role });
@@ -79,7 +108,8 @@ let AuthService = class AuthService {
             user: {
                 id: userId,
                 name,
-                email, role,
+                email,
+                role,
             },
         };
     }
@@ -115,15 +145,23 @@ let AuthService = class AuthService {
        WHERE r.role_id = ? GROUP BY r.role_id, r.role_code`, [user.role_id]);
         const role = roleRows[0]?.role_code || 'CUSTOMER';
         const permissions = typeof roleRows[0]?.permissions === 'string'
-            ? JSON.parse(roleRows[0].permissions) : (roleRows[0]?.permissions || []);
-        const token = this.jwtService.sign({ id: user.user_id, email: user.user_email, role, permissions });
+            ? JSON.parse(roleRows[0].permissions)
+            : roleRows[0]?.permissions || [];
+        const token = this.jwtService.sign({
+            id: user.user_id,
+            email: user.user_email,
+            role,
+            permissions,
+        });
         return {
             success: true,
             token,
             user: {
                 id: user.user_id,
                 name: user.user_full_name,
-                email: user.user_email, role, permissions,
+                email: user.user_email,
+                role,
+                permissions,
             },
         };
     }
@@ -145,7 +183,12 @@ let AuthService = class AuthService {
     async logLogin(userId, status) {
         await this.dataSource.query(`INSERT INTO login_logs(user_id, login_status) VALUES(?, ?)`, [userId, status]);
         await this.dataSource.query(`INSERT INTO audit_logs(actor_user_id, action_name, affected_table_name, affected_record_id, action_description)
-       VALUES(?, ?, 'users', ?, ?)`, [userId, status === 'SUCCESS' ? 'LOGIN_SUCCESS' : 'LOGIN_FAILED', userId, JSON.stringify({ status })]);
+       VALUES(?, ?, 'users', ?, ?)`, [
+            userId,
+            status === 'SUCCESS' ? 'LOGIN_SUCCESS' : 'LOGIN_FAILED',
+            userId,
+            JSON.stringify({ status }),
+        ]);
     }
 };
 exports.AuthService = AuthService;

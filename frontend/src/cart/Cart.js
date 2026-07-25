@@ -15,6 +15,7 @@ function formatPrice(price) {
 function Cart() {
   const [products, setProducts] = useState([]);
   const [step, setStep] = useState(1);
+  const [finalTotal, setFinalTotal] = useState(0);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -33,16 +34,13 @@ function Cart() {
 
   const total = products.reduce(
     (sum, item) => sum + item.price * item.quantity,
-    0
+    0,
   );
 
   return (
     <div className="cart-page">
       <div className="container">
-        <div
-          className="cart-back"
-          onClick={() => navigate("/")}
-        >
+        <div className="cart-back" onClick={() => navigate("/")}>
           <FontAwesomeIcon icon={["fas", "arrow-left"]} />
           <span>Tiếp tục mua hàng</span>
         </div>
@@ -54,9 +52,7 @@ function Cart() {
         {/* =================== BƯỚC 1 =================== */}
         {step === 1 && (
           <div className="cart-wrapper">
-
             <div className="cart-list">
-
               {products.length === 0 ? (
                 <div className="empty-cart">
                   <h3>🛒 Giỏ hàng đang trống</h3>
@@ -64,17 +60,12 @@ function Cart() {
                 </div>
               ) : (
                 products.map((product) => (
-                  <CartItem
-                    key={product.id}
-                    product={product}
-                  />
+                  <CartItem key={product.id} product={product} />
                 ))
               )}
-
             </div>
 
             <div className="cart-summary">
-
               <h3>Tóm tắt đơn hàng</h3>
 
               <div className="summary-row">
@@ -83,10 +74,7 @@ function Cart() {
               </div>
 
               <div className="voucher-box">
-                <input
-                  type="text"
-                  placeholder="Nhập mã giảm giá"
-                />
+                <input type="text" placeholder="Nhập mã giảm giá" />
                 <button>Áp dụng</button>
               </div>
 
@@ -108,18 +96,12 @@ function Cart() {
               >
                 ĐẶT HÀNG NGAY
               </button>
-
             </div>
-
           </div>
         )}
 
         {/* =================== BƯỚC 2 =================== */}
-        {step === 2 && (
-          <CustomerForm
-            onNext={() => setStep(3)}
-          />
-        )}
+        {step === 2 && <CustomerForm onNext={() => setStep(3)} />}
 
         {/* =================== BƯỚC 3 =================== */}
         {step === 3 && (
@@ -127,6 +109,7 @@ function Cart() {
             total={total}
             onBack={() => setStep(2)}
             onFinish={() => {
+              setFinalTotal(total); // Lưu lại tổng tiền trước khi xoá giỏ hàng
               clearCart();
               setProducts([]);
               setStep(4);
@@ -134,19 +117,17 @@ function Cart() {
           />
         )}
 
+        {/* =================== BƯỚC 4 =================== */}
         {step === 4 && (
           <Success
-            total={total}
+            total={finalTotal}
             onHome={() => {
-                localStorage.removeItem("customer-info");
-                localStorage.removeItem("payment-method");
-
+              localStorage.removeItem("customer-info");
+              localStorage.removeItem("payment-method");
               navigate("/");
             }}
-           
           />
         )}
-        
       </div>
     </div>
   );
