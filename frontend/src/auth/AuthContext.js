@@ -75,6 +75,11 @@ export function AuthProvider({ children }) {
       register: ({ confirm, confirmPassword, confirm_password, ...payload }) =>
         request("/auth/register", payload),
       logout,
+      updateSessionUser: (user) => {
+        const next = { ...session, user: { ...session?.user, ...user } };
+        localStorage.setItem("eshop_session", JSON.stringify(next));
+        setSession(next);
+      },
       api: async (path, options = {}) => {
         const response = await fetch(`${API}${path}`, {
           ...options,

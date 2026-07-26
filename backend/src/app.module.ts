@@ -9,6 +9,7 @@ import { CartModule } from './cart/cart.module';
 import { CategoriesController } from './categories/categories.controller';
 import { AiModule } from './ai/ai.module';
 import { ManagementModule } from './management/management.module';
+import { CustomerModule } from './customer/customer.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ManagementModule } from './management/management.module';
     CartModule,
     ManagementModule,
     AiModule,
+    CustomerModule,
   ],
   controllers: [AppController, CategoriesController],
   providers: [AppService],

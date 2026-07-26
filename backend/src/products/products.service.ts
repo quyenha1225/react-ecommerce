@@ -51,12 +51,15 @@ export class ProductsService {
         p.average_rating AS rating,
         p.review_count AS reviewCount,
         0 AS percent_off,
-        COALESCE(vs.current_stock, 0) AS stock_quantity
+        COALESCE(vs.available_quantity, 0) AS stock_quantity
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.category_id
       LEFT JOIN brands b ON p.brand_id = b.brand_id
       LEFT JOIN product_images pi ON p.product_id = pi.product_id AND pi.is_thumbnail = TRUE
-      LEFT JOIN vw_product_stock vs ON p.product_id = vs.product_id
+      LEFT JOIN (
+        SELECT product_id, SUM(available_quantity) AS available_quantity
+        FROM vw_product_stock GROUP BY product_id
+      ) vs ON p.product_id = vs.product_id
       WHERE (p.product_id = ? OR p.product_slug = ?) AND p.product_status = 'ACTIVE'
       LIMIT 1
       `,
@@ -167,19 +170,34 @@ export class ProductsService {
     rating: number,
     title: string,
     content: string,
-    orderId: number | null = null,
+    orderId: number,
   ) {
     if (rating < 1 || rating > 5) {
       throw new BadRequestException('rating phai tu 1 den 5');
     }
 
+    if (!Number.isInteger(orderId)) {
+      throw new BadRequestException('orderId la bat buoc');
+    }
+    const purchased = await this.dataSource.query(
+      `SELECT oi.variant_id FROM order_items oi
+       JOIN orders o ON o.order_id=oi.order_id
+       JOIN order_statuses os ON os.order_status_id=o.order_status_id
+       WHERE o.order_id=? AND o.customer_id=? AND oi.product_id=?
+         AND os.order_status_code='DELIVERED' LIMIT 1`,
+      [orderId, userId, productId],
+    );
+    if (!purchased[0]) {
+      throw new BadRequestException('Chi co the danh gia san pham da giao');
+    }
+
     const result = await this.dataSource.query(
       `
       INSERT INTO product_reviews
-        (product_id, user_id, order_id, rating, review_title, review_content, is_verified_purchase, review_status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, 'PENDING')
+        (product_id, user_id, order_id, variant_id, rating, review_title, review_content, is_verified_purchase, review_status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, TRUE, 'PENDING')
       `,
-      [productId, userId, orderId, rating, title, content, orderId !== null],
+      [productId, userId, orderId, purchased[0].variant_id, rating, title, content],
     );
 
     // review_status mac dinh la PENDING (trigger o DB se cong vao average_rating/review_count

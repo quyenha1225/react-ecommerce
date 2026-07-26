@@ -37,7 +37,7 @@ let ProductsController = class ProductsController {
         return await this.productsService.getReviews(Number(id));
     }
     async createProductReview(id, body, req) {
-        return await this.productsService.createReview(Number(id), req.user.id, body.rating, body.title ?? '', body.content ?? '', body.orderId ?? null);
+        return await this.productsService.createReview(Number(id), req.user.id, body.rating, body.title ?? '', body.content ?? '', Number(body.orderId));
     }
 };
 exports.ProductsController = ProductsController;

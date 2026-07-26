@@ -7,6 +7,7 @@ import { clearCart, getCart } from "../utils/cartStorage";
 import PaymentForm from "./PaymentForm";
 import Success from "./Success";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
 function formatPrice(price) {
   return price.toLocaleString("vi-VN") + "đ";
@@ -16,7 +17,9 @@ function Cart() {
   const [products, setProducts] = useState([]);
   const [step, setStep] = useState(1);
   const [finalTotal, setFinalTotal] = useState(0);
+  const [completedOrder, setCompletedOrder] = useState(null);
   const navigate = useNavigate();
+  const { session } = useAuth();
 
   useEffect(() => {
     function loadCart() {
@@ -91,6 +94,11 @@ function Cart() {
                     return;
                   }
 
+                  if (!session) {
+                    alert("Vui lòng đăng nhập để đặt hàng và theo dõi đơn trong tài khoản.");
+                    return;
+                  }
+
                   setStep(2);
                 }}
               >
@@ -107,8 +115,10 @@ function Cart() {
         {step === 3 && (
           <PaymentForm
             total={total}
+            products={products}
             onBack={() => setStep(2)}
-            onFinish={() => {
+            onFinish={(order) => {
+              setCompletedOrder(order);
               setFinalTotal(total); // Lưu lại tổng tiền trước khi xoá giỏ hàng
               clearCart();
               setProducts([]);
@@ -121,6 +131,7 @@ function Cart() {
         {step === 4 && (
           <Success
             total={finalTotal}
+            order={completedOrder}
             onHome={() => {
               localStorage.removeItem("customer-info");
               localStorage.removeItem("payment-method");

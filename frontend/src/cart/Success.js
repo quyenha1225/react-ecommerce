@@ -1,14 +1,14 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useState } from "react";
 
-function Success({ total, onHome }) {
+function Success({ total, order, onHome }) {
   const customer = JSON.parse(localStorage.getItem("customer-info")) || {};
 
   const payment = localStorage.getItem("payment-method") || "cod";
 
   // Sử dụng useState với callback để mã đơn hàng chỉ khởi tạo duy nhất 1 lần khi mount
   const [orderId] = useState(
-    () => "ESH" + Math.floor(Math.random() * 900000 + 100000),
+    () => order?.code || "ESH" + Math.floor(Math.random() * 900000 + 100000),
   );
 
   const paymentName = {

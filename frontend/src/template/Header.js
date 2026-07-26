@@ -127,7 +127,8 @@ function Header({ guestMode = false }) {
             {isGuest && <span className="guest-badge"><FontAwesomeIcon icon={["fas","user-secret"]}/> Khách vãng lai</span>}
             {!isGuest && session ? <div className="eshop-account-session">
               {["ADMIN", "STAFF"].includes(session.user.role) && <Link to="/admin" className="eshop-user-btn"><FontAwesomeIcon icon={["fas","chart-line"]}/><span>Quản trị</span></Link>}
-              <button type="button" className="eshop-user-btn" onClick={logout}><FontAwesomeIcon icon={["fas","sign-out-alt"]}/><span>{session.user.name?.split(" ").pop()}</span></button>
+              <Link to="/account" className="eshop-user-btn"><FontAwesomeIcon icon={["fas","user-circle"]}/><span>{session.user.name?.split(" ").pop() || "Tài khoản"}</span></Link>
+              <button type="button" className="eshop-user-btn" onClick={logout} title="Đăng xuất" aria-label="Đăng xuất"><FontAwesomeIcon icon={["fas","sign-out-alt"]}/></button>
             </div> : <button
               type="button"
               className="eshop-user-btn"
