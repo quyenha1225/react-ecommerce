@@ -9,6 +9,8 @@ import { CartModule } from './cart/cart.module';
 import { CategoriesController } from './categories/categories.controller';
 import { AiModule } from './ai/ai.module';
 import { ManagementModule } from './management/management.module';
+import { OrdersModule } from './orders/orders.module';
+import { PaymentsModule } from './payments/payments.module';
 
 @Module({
   imports: [
@@ -37,6 +39,8 @@ import { ManagementModule } from './management/management.module';
     CartModule,
     ManagementModule,
     AiModule,
+    OrdersModule,
+    PaymentsModule,
   ],
   controllers: [AppController, CategoriesController],
   providers: [AppService],

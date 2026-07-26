@@ -1,34 +1,80 @@
 import { useState } from "react";
 import SePayQRModal from "./SePayQRModal";
 
-function PaymentForm({ total, onBack, onFinish }) {
+function PaymentForm({ total, selectedProducts, onBack, onFinish }) {
   const [method, setMethod] = useState("cod");
   const [showQRModal, setShowQRModal] = useState(false);
   const [orderData, setCreatedOrderData] = useState(null);
+  const [loading, setLoading] = useState(false);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-
     localStorage.setItem("payment-method", method);
 
-    // Nếu chọn SePay VietQR -> Sinh thông tin đơn hàng & mở Modal QR
-    if (method === "sepay") {
-      const generatedOrderId =
-        "ESH" + Math.floor(Math.random() * 900000 + 100000);
-      const customer = JSON.parse(localStorage.getItem("customer-info")) || {};
+    const customer = JSON.parse(localStorage.getItem("customer-info")) || {};
+    const token = localStorage.getItem("token") || "";
+
+    setLoading(true);
+
+    try {
+      // 1. TẠO ĐƠN HÀNG THẬT DƯỚI DATABASE TRƯỚC
+      const orderPayload = {
+        customerInfo: customer,
+        items: selectedProducts || [],
+        totalAmount: total,
+        paymentMethod: method,
+      };
+
+      const res = await fetch("http://localhost:3001/api/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(orderPayload),
+      });
+
+      let realOrder = {};
+      if (res.ok) {
+        realOrder = await res.json();
+      }
+
+      // Lấy orderId và orderCode thật từ DB (nếu API chưa tạo kịp thì dùng fallback)
+      const realOrderId =
+        realOrder.orderId || realOrder.order_id || realOrder.id || Date.now();
+      const realOrderCode =
+        realOrder.orderCode || realOrder.order_code || `ESH${realOrderId}`;
 
       const currentOrder = {
-        orderId: generatedOrderId,
-        orderCode: generatedOrderId,
+        orderId: realOrderId,
+        orderCode: realOrderCode,
         amount: total,
         customerName: customer.fullName || "Khách hàng",
       };
 
       setCreatedOrderData(currentOrder);
-      setShowQRModal(true);
-    } else {
-      // Nếu chọn COD -> Hoàn tất ngay sang Bước 4
-      onFinish();
+
+      // 2. XỬ LÝ THEO PHƯƠNG THỨC THANH TOÁN
+      if (method === "sepay") {
+        // Nếu chọn QR -> Mở Modal QR với thông tin đơn hàng THẬT
+        setShowQRModal(true);
+      } else {
+        // Nếu chọn COD -> Sang ngay trang Hoàn tất
+        onFinish();
+      }
+    } catch (err) {
+      console.error("Lỗi tạo đơn hàng:", err);
+      // Fallback vẫn mở modal nếu vướng lỗi mạng nhẹ
+      const fallbackId = Date.now();
+      setCreatedOrderData({
+        orderId: fallbackId,
+        orderCode: `ESH${fallbackId}`,
+        amount: total,
+      });
+      if (method === "sepay") setShowQRModal(true);
+      else onFinish();
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -71,12 +117,17 @@ function PaymentForm({ total, onBack, onFinish }) {
               type="button"
               className="btn btn-secondary"
               onClick={onBack}
+              disabled={loading}
             >
               Quay lại
             </button>
 
-            <button type="submit" className="btn btn-warning">
-              Xác nhận đặt hàng
+            <button
+              type="submit"
+              className="btn btn-warning"
+              disabled={loading}
+            >
+              {loading ? "Đang tạo đơn hàng..." : "Xác nhận đặt hàng"}
             </button>
           </div>
         </form>

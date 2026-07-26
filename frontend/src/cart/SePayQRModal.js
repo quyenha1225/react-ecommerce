@@ -1,38 +1,57 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 function SePayQRModal({ show, orderData, onClose, onSuccess }) {
-  const [loadingMock, setLoadingMock] = useState(false);
+  const [checking, setChecking] = useState(false);
+
+  // Lấy chính xác mã/ID đơn hàng để gọi Polling
+  const pollTargetId =
+    orderData?.orderCode || orderData?.orderId || orderData?.id || "";
+
+  const bankInfo = {
+    bankName: "VietinBank",
+    accountNo: "101886339075",
+    accountName: "NGAN THAI THUONG",
+    amount: orderData?.totalAmount || orderData?.amount || 0,
+    orderCode: `SEVQR ${pollTargetId}`,
+  };
+
+  // Link sinh mã QR VietinBank
+  const qrUrl = `https://qr.sepay.vn/img?bank=${bankInfo.bankName}&acc=${bankInfo.accountNo}&template=compact&amount=${bankInfo.amount}&des=${encodeURIComponent(bankInfo.orderCode)}`;
+
+  // 🔴 VÒNG LẶP POLLING TỰ ĐỘNG CHỜ THANH TOÁN (MỖI 2 GIÂY/LẦN)
+  useEffect(() => {
+    if (!show || !pollTargetId) return;
+
+    const checkStatus = async () => {
+      try {
+        setChecking(true);
+        const res = await fetch(
+          `http://localhost:3001/api/payments/status/${pollTargetId}`,
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          // Ngay khi Backend báo matches PAID -> Chuyển trang thành công ngay lập tức!
+          if (data?.isPaid) {
+            localStorage.setItem("payment-method", "sepay");
+            onSuccess();
+          }
+        }
+      } catch (err) {
+        console.error("Lỗi kiểm tra trạng thái thanh toán:", err);
+      } finally {
+        setChecking(false);
+      }
+    };
+
+    checkStatus();
+    const intervalId = setInterval(checkStatus, 2000);
+
+    return () => clearInterval(intervalId);
+  }, [show, pollTargetId, onSuccess]);
 
   if (!show || !orderData) return null;
-
-  // Cấu hình thông tin ngân hàng hiển thị
-  const bankInfo = {
-    bankName: "MBBank (MB)",
-    accountNo: "0385416387",
-    accountName: "ELECTROSHOP",
-    amount: orderData.totalAmount || orderData.amount || 0,
-    orderCode: orderData.orderCode || orderData.orderId || `ESH${Date.now()}`,
-  };
-
-  // Link sinh mã QR SePay VietQR chuẩn
-  const qrUrl = `https://qr.sepay.vn/img?bank=MBBank&acc=${bankInfo.accountNo}&template=compact&amount=${bankInfo.amount}&des=${bankInfo.orderCode}`;
-
-  // Hàm giả lập thanh toán thành công trực tiếp phía Frontend
-  const handleMockPayment = () => {
-    setLoadingMock(true);
-
-    setTimeout(() => {
-      // 1. Lưu phương thức thanh toán vào localStorage để trang Success hiển thị
-      localStorage.setItem("payment-method", "sepay");
-
-      setLoadingMock(false);
-
-      // 2. Thông báo & Chuyển sang bước Hoàn tất
-      alert("🎉 [DEMO] Hệ thống đã ghi nhận thanh toán thành công!");
-      onSuccess();
-    }, 800); // Tạo độ trễ 0.8s mô phỏng xử lý thực tế
-  };
 
   return (
     <div
@@ -45,7 +64,7 @@ function SePayQRModal({ show, orderData, onClose, onSuccess }) {
           <div className="modal-header border-0 pb-0">
             <h5 className="modal-title fw-bold text-primary">
               <FontAwesomeIcon icon={["fas", "qrcode"]} className="me-2" />
-              Thanh toán chuyển khoản VietQR
+              Thanh toán chuyển khoản VietQR (VietinBank)
             </h5>
             <button
               type="button"
@@ -56,10 +75,9 @@ function SePayQRModal({ show, orderData, onClose, onSuccess }) {
 
           <div className="modal-body">
             <p className="text-muted small mb-2">
-              Sử dụng App Ngân hàng hoặc Ví điện tử quét mã QR dưới đây:
+              Mở App Ngân hàng bất kỳ quét mã QR dưới đây để thanh toán:
             </p>
 
-            {/* Khung chứa ảnh mã QR */}
             <div className="my-2 p-2 bg-light rounded-3 d-inline-block border">
               <img
                 src={qrUrl}
@@ -69,7 +87,15 @@ function SePayQRModal({ show, orderData, onClose, onSuccess }) {
               />
             </div>
 
-            {/* Thông tin chi tiết */}
+            <div className="text-success small my-2 fw-bold">
+              <FontAwesomeIcon
+                icon={["fas", "spinner"]}
+                spin
+                className="me-2"
+              />
+              Hệ thống đang tự động chờ giao dịch của bạn...
+            </div>
+
             <div className="bg-light p-3 rounded-3 text-start small mt-2">
               <div className="d-flex justify-content-between mb-1">
                 <span className="text-muted">Ngân hàng:</span>
@@ -96,25 +122,6 @@ function SePayQRModal({ show, orderData, onClose, onSuccess }) {
                 </span>
               </div>
             </div>
-
-            {/* NÚT MOCKUP GIẢ LẬP DÀNH CHO DEMO */}
-            {/* <div className="mt-3 p-2 bg-warning bg-opacity-10 border border-warning rounded-3">
-              <div className="text-warning-emphasis small fw-bold mb-2">
-                ⚙️ Chế độ Demo / Đồ án (Không cần chuyển tiền thật)
-              </div>
-              <button
-                type="button"
-                className="btn btn-success w-100 fw-bold shadow-sm"
-                onClick={handleMockPayment}
-                disabled={loadingMock}
-              >
-                {loadingMock ? (
-                  <span>Đang xử lý...</span>
-                ) : (
-                  <span>🚀 [Demo] Kích hoạt Thanh Toán Thành Công</span>
-                )}
-              </button>
-            </div> */}
           </div>
 
           <div className="modal-footer border-0 pt-0">

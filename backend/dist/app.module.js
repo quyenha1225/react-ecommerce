@@ -18,6 +18,8 @@ const cart_module_1 = require("./cart/cart.module");
 const categories_controller_1 = require("./categories/categories.controller");
 const ai_module_1 = require("./ai/ai.module");
 const management_module_1 = require("./management/management.module");
+const orders_module_1 = require("./orders/orders.module");
+const payments_module_1 = require("./payments/payments.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -43,6 +45,8 @@ exports.AppModule = AppModule = __decorate([
             cart_module_1.CartModule,
             management_module_1.ManagementModule,
             ai_module_1.AiModule,
+            orders_module_1.OrdersModule,
+            payments_module_1.PaymentsModule,
         ],
         controllers: [app_controller_1.AppController, categories_controller_1.CategoriesController],
         providers: [app_service_1.AppService],
