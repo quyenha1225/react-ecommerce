@@ -98,15 +98,15 @@ function Cart() {
                     return;
                   }
 
-<<<<<<< HEAD
                   if (!session) {
                     alert("Vui lòng đăng nhập để đặt hàng và theo dõi đơn trong tài khoản.");
-=======
+                    return;
+                  }
+
                   if (selectedProducts.length === 0) {
                     alert(
                       "Vui lòng tích chọn ít nhất 1 sản phẩm để thanh toán!",
                     );
->>>>>>> ed9005cbd35251de2aec3528645f9f2c84897783
                     return;
                   }
 
@@ -131,18 +131,11 @@ function Cart() {
         {step === 3 && (
           <PaymentForm
             total={total}
-<<<<<<< HEAD
-            products={products}
+            products={selectedProducts}
             onBack={() => setStep(2)}
             onFinish={(order) => {
               setCompletedOrder(order);
               setFinalTotal(total); // Lưu lại tổng tiền trước khi xoá giỏ hàng
-=======
-            selectedProducts={selectedProducts}
-            onBack={() => setStep(2)}
-            onFinish={() => {
-              setFinalTotal(total);
->>>>>>> ed9005cbd35251de2aec3528645f9f2c84897783
               clearCart();
               setProducts([]);
               setStep(4);

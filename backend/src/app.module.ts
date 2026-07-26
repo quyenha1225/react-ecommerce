@@ -8,14 +8,10 @@ import { ProductsModule } from './products/products.module';
 import { CartModule } from './cart/cart.module';
 import { AiModule } from './ai/ai.module';
 import { ManagementModule } from './management/management.module';
-<<<<<<< HEAD
 import { CustomerModule } from './customer/customer.module';
-=======
-import { OrdersModule } from './orders/orders.module';
 import { PaymentsModule } from './payments/payments.module';
 import { CategoriesModule } from './categories/categories.module';
 import { UsersModule } from './users/users.module';
->>>>>>> ed9005cbd35251de2aec3528645f9f2c84897783
 
 @Module({
   imports: [
@@ -46,7 +42,6 @@ import { UsersModule } from './users/users.module';
     ProductsModule,
     CategoriesModule,
     CartModule,
-    OrdersModule,
     PaymentsModule,
     ManagementModule,
     AiModule,

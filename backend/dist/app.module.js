@@ -18,6 +18,9 @@ const cart_module_1 = require("./cart/cart.module");
 const ai_module_1 = require("./ai/ai.module");
 const management_module_1 = require("./management/management.module");
 const customer_module_1 = require("./customer/customer.module");
+const payments_module_1 = require("./payments/payments.module");
+const categories_module_1 = require("./categories/categories.module");
+const users_module_1 = require("./users/users.module");
 let AppModule = class AppModule {
 };
 exports.AppModule = AppModule;
@@ -39,12 +42,11 @@ exports.AppModule = AppModule = __decorate([
                 synchronize: false,
             }),
             auth_module_1.AuthModule,
-            UsersModule,
+            users_module_1.UsersModule,
             products_module_1.ProductsModule,
-            CategoriesModule,
+            categories_module_1.CategoriesModule,
             cart_module_1.CartModule,
-            OrdersModule,
-            PaymentsModule,
+            payments_module_1.PaymentsModule,
             management_module_1.ManagementModule,
             ai_module_1.AiModule,
             customer_module_1.CustomerModule,
