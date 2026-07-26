@@ -17,62 +17,52 @@ function PaymentForm({ total, selectedProducts, onBack, onFinish }) {
     setLoading(true);
 
     try {
-      // 1. TẠO ĐƠN HÀNG THẬT DƯỚI DATABASE TRƯỚC
+      // 1. CHUẨN BỊ PAYLOAD GỬI LÊN BACKEND
       const orderPayload = {
-        customerInfo: customer,
-        items: selectedProducts || [],
-        totalAmount: total,
-        paymentMethod: method,
+        recipient_name: customer.fullName || "Khách hàng",
+        recipient_phone: customer.phone || "0386960699",
+        shipping_address: customer.address || "Hà Nội",
+        payment_method: method === "sepay" ? "QR_BANKING" : "COD",
+        note: customer.note || "",
+        items: (selectedProducts || []).map((p) => ({
+          variant_id: Number(p.variant_id || p.id || 130), // ÉP KIỂU NUMBER CHÍNH XÁC
+          quantity: Number(p.quantity || 1),              // ÉP KIỂU NUMBER CHÍNH XÁC
+        })),
       };
 
-      const res = await fetch("http://localhost:3001/api/orders", {
+      // 2. GỌI CHÍNH XÁC ENDPOINT /api/orders/checkout
+      const res = await fetch("http://localhost:3001/api/orders/checkout", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify(orderPayload),
       });
 
-      let realOrder = {};
-      if (res.ok) {
-        realOrder = await res.json();
-      }
+      const result = await res.json();
 
-      // Lấy orderId và orderCode thật từ DB (nếu API chưa tạo kịp thì dùng fallback)
-      const realOrderId =
-        realOrder.orderId || realOrder.order_id || realOrder.id || Date.now();
-      const realOrderCode =
-        realOrder.orderCode || realOrder.order_code || `ESH${realOrderId}`;
+      if (res.ok && result.success) {
+        const createdOrderInfo = {
+          orderId: result.order.order_id,
+          orderCode: result.order.order_code,
+          amount: result.order.total_amount || total,
+          customerName: customer.fullName || "Khách hàng",
+        };
 
-      const currentOrder = {
-        orderId: realOrderId,
-        orderCode: realOrderCode,
-        amount: total,
-        customerName: customer.fullName || "Khách hàng",
-      };
+        setCreatedOrderData(createdOrderInfo);
 
-      setCreatedOrderData(currentOrder);
-
-      // 2. XỬ LÝ THEO PHƯƠNG THỨC THANH TOÁN
-      if (method === "sepay") {
-        // Nếu chọn QR -> Mở Modal QR với thông tin đơn hàng THẬT
-        setShowQRModal(true);
+        if (method === "sepay") {
+          setShowQRModal(true);
+        } else {
+          onFinish();
+        }
       } else {
-        // Nếu chọn COD -> Sang ngay trang Hoàn tất
-        onFinish();
+        alert(result.message || "Lỗi tạo đơn hàng!");
       }
     } catch (err) {
-      console.error("Lỗi tạo đơn hàng:", err);
-      // Fallback vẫn mở modal nếu vướng lỗi mạng nhẹ
-      const fallbackId = Date.now();
-      setCreatedOrderData({
-        orderId: fallbackId,
-        orderCode: `ESH${fallbackId}`,
-        amount: total,
-      });
-      if (method === "sepay") setShowQRModal(true);
-      else onFinish();
+      console.error("Lỗi kết nối Checkout:", err);
+      alert("Không thể kết nối đến máy chủ thanh toán!");
     } finally {
       setLoading(false);
     }
@@ -161,7 +151,7 @@ function PaymentForm({ total, selectedProducts, onBack, onFinish }) {
         onClose={() => setShowQRModal(false)}
         onSuccess={() => {
           setShowQRModal(false);
-          onFinish(); // Chuyển sang trang Success (Hoàn tất)
+          onFinish();
         }}
       />
     </div>

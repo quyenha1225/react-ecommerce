@@ -5,7 +5,10 @@ import { OrdersService } from './orders.service';
 
 @Module({
   imports: [
-    JwtModule.register({}),
+    JwtModule.register({
+      secret: process.env.JWT_SECRET || 'secretKey',
+      signOptions: { expiresIn: '1d' },
+    }),
   ],
   controllers: [OrdersController],
   providers: [OrdersService],
