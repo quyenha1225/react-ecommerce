@@ -21,22 +21,32 @@ let ProductsService = class ProductsService {
         const query = `
       SELECT 
         p.product_id AS id, 
+        p.product_id,
         p.product_slug AS slug,
+        p.product_slug AS category_slug,
         p.product_name AS name, 
+        p.product_name,
         p.base_price AS price, 
+        p.base_price,
+        c.category_id,
+        c.category_name,
+        c.category_slug,
         c.category_slug AS category, 
+        b.brand_id,
         b.brand_name AS brand, 
+        b.brand_name,
         pi.image_url,
         0 AS percent_off,
         p.average_rating AS rating,
-        p.review_count AS reviewCount
-        ,COALESCE(bs.total_sold, 0) AS sold
+        p.review_count AS reviewCount,
+        COALESCE(bs.total_sold, 0) AS sold
       FROM products p
       LEFT JOIN categories c ON p.category_id = c.category_id
       LEFT JOIN brands b ON p.brand_id = b.brand_id
       LEFT JOIN product_images pi ON p.product_id = pi.product_id AND pi.is_thumbnail = TRUE
       LEFT JOIN vw_best_selling_products bs ON bs.product_id = p.product_id
       WHERE p.product_status = 'ACTIVE'
+      ORDER BY p.product_id DESC
     `;
         const products = await this.dataSource.query(query);
         return products;
@@ -50,7 +60,9 @@ let ProductsService = class ProductsService {
         p.product_description AS description,
         p.base_price AS price, 
         p.warranty_months AS warrantyMonths,
+        c.category_id,
         c.category_name AS category, 
+        c.category_slug,
         b.brand_name AS brand, 
         pi.image_url,
         p.average_rating AS rating,
