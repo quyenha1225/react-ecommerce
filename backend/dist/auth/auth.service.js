@@ -79,8 +79,12 @@ let AuthService = class AuthService {
         }
     }
     async register(createUserDto) {
-        const { name, password } = createUserDto;
-        const email = createUserDto.email.trim().toLowerCase();
+        const name = createUserDto.name || createUserDto.user_full_name || 'Khách hàng';
+        const email = (createUserDto.email || createUserDto.user_email || '')
+            .trim()
+            .toLowerCase();
+        const password = createUserDto.password;
+        const phone = createUserDto.phone || createUserDto.user_phone;
         const existingUsers = await this.dataSource.query(`SELECT user_id FROM users WHERE user_email = ? LIMIT 1`, [email]);
         if (existingUsers[0]) {
             throw new common_1.BadRequestException('Email already exists');
@@ -92,16 +96,16 @@ let AuthService = class AuthService {
         }
         const result = await this.dataSource.query(`INSERT INTO users
        (role_id, user_full_name, user_email, user_phone, password_hash, account_status)
-       VALUES (?, ?, ?, ?, ?, 'ACTIVE')`, [
-            customerRoles[0].role_id,
-            name,
-            email,
-            createUserDto.phone || null,
-            hashedPassword,
-        ]);
+       VALUES (?, ?, ?, ?, ?, 'ACTIVE')`, [customerRoles[0].role_id, name, email, phone || null, hashedPassword]);
         const userId = result.insertId;
         const role = 'CUSTOMER';
-        const token = this.jwtService.sign({ id: userId, email, role });
+        const token = this.jwtService.sign({
+            sub: userId,
+            id: userId,
+            email,
+            role,
+            permissions: [],
+        });
         return {
             success: true,
             token,
@@ -110,6 +114,7 @@ let AuthService = class AuthService {
                 name,
                 email,
                 role,
+                permissions: [],
             },
         };
     }

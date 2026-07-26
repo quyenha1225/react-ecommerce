@@ -1,12 +1,30 @@
 import { UsersService } from './users.service';
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserDto, ChangePasswordDto } from './dto/update-user.dto';
 export declare class UsersController {
     private readonly usersService;
     constructor(usersService: UsersService);
-    create(createUserDto: CreateUserDto): string;
-    findAll(): string;
-    findOne(id: string): string;
-    update(id: string, updateUserDto: UpdateUserDto): string;
-    remove(id: string): string;
+    getProfile(req: any): Promise<{
+        success: boolean;
+        data: any;
+    }>;
+    updateProfile(req: any, dto: UpdateUserDto): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    changePassword(req: any, dto: ChangePasswordDto): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    findAll(): Promise<{
+        success: boolean;
+        data: any;
+    }>;
+    findOne(id: number): Promise<{
+        success: boolean;
+        data: any;
+    }>;
+    remove(id: number): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }

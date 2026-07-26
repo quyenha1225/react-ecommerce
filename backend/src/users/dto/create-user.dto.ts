@@ -1,22 +1,31 @@
-import { IsEmail, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, MinLength } from 'class-validator';
+import { IsNotEmpty, IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
 
 export class CreateUserDto {
-  @IsNotEmpty()
+  @IsOptional()
   @IsString()
-  @MaxLength(150)
-  name: string;
-
-  @IsEmail()
-  @IsNotEmpty()
-  email: string;
-
-  @IsNotEmpty()
-  @IsString()
-  @MinLength(10)
-  @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/, { message: 'password must include upper/lowercase, number and symbol' })
-  password: string;
+  name?: string; // Hỗ trợ auth.service.ts đang gọi .name
 
   @IsOptional()
-  @Matches(/^[0-9+]{9,15}$/)
-  phone?: string;
+  @IsString()
+  user_full_name?: string; // Hỗ trợ database
+
+  @IsNotEmpty({ message: 'Email không được để trống' })
+  @IsEmail({}, { message: 'Email không hợp lệ' })
+  email!: string; // Hỗ trợ auth.service.ts đang gọi .email
+
+  @IsOptional()
+  @IsEmail()
+  user_email?: string;
+
+  @IsNotEmpty({ message: 'Mật khẩu không được để trống' })
+  @MinLength(6, { message: 'Mật khẩu phải có ít nhất 6 ký tự' })
+  password!: string;
+
+  @IsOptional()
+  @IsString()
+  phone?: string; // Hỗ trợ auth.service.ts đang gọi .phone
+
+  @IsOptional()
+  @IsString()
+  user_phone?: string;
 }

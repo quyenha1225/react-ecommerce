@@ -65,8 +65,14 @@ export class AuthService implements OnModuleInit {
   }
 
   async register(createUserDto: CreateUserDto) {
-    const { name, password } = createUserDto;
-    const email = createUserDto.email.trim().toLowerCase();
+    // Hỗ trợ map linh hoạt cả 2 kiểu tên thuộc tính từ DTO
+    const name =
+      createUserDto.name || createUserDto.user_full_name || 'Khách hàng';
+    const email = (createUserDto.email || createUserDto.user_email || '')
+      .trim()
+      .toLowerCase();
+    const password = createUserDto.password;
+    const phone = createUserDto.phone || createUserDto.user_phone;
 
     // Check if user already exists
     const existingUsers = await this.dataSource.query(
@@ -92,18 +98,19 @@ export class AuthService implements OnModuleInit {
       `INSERT INTO users
        (role_id, user_full_name, user_email, user_phone, password_hash, account_status)
        VALUES (?, ?, ?, ?, ?, 'ACTIVE')`,
-      [
-        customerRoles[0].role_id,
-        name,
-        email,
-        createUserDto.phone || null,
-        hashedPassword,
-      ],
+      [customerRoles[0].role_id, name, email, phone || null, hashedPassword],
     );
     const userId = result.insertId;
 
     const role = 'CUSTOMER';
-    const token = this.jwtService.sign({ id: userId, email, role });
+    // Đảm bảo payload đồng bộ 'id', 'sub', 'email', 'role' để các Guard đọc chính xác
+    const token = this.jwtService.sign({
+      sub: userId,
+      id: userId,
+      email,
+      role,
+      permissions: [],
+    });
 
     return {
       success: true,
@@ -113,6 +120,7 @@ export class AuthService implements OnModuleInit {
         name,
         email,
         role,
+        permissions: [],
       },
     };
   }

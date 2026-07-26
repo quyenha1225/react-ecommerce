@@ -16,6 +16,7 @@ export declare class AuthService implements OnModuleInit {
             name: string;
             email: string;
             role: string;
+            permissions: never[];
         };
     }>;
     login(email: string, password: string): Promise<{

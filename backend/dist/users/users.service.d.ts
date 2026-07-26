@@ -1,9 +1,26 @@
-import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
+import { DataSource } from 'typeorm';
+import { UpdateUserDto, ChangePasswordDto } from './dto/update-user.dto';
 export declare class UsersService {
-    create(createUserDto: CreateUserDto): string;
-    findAll(): string;
-    findOne(id: number): string;
-    update(id: number, updateUserDto: UpdateUserDto): string;
-    remove(id: number): string;
+    private dataSource;
+    constructor(dataSource: DataSource);
+    findAll(): Promise<{
+        success: boolean;
+        data: any;
+    }>;
+    findOne(id: number): Promise<{
+        success: boolean;
+        data: any;
+    }>;
+    updateProfile(userId: number, dto: UpdateUserDto): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    changePassword(userId: number, dto: ChangePasswordDto): Promise<{
+        success: boolean;
+        message: string;
+    }>;
+    remove(id: number): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }
