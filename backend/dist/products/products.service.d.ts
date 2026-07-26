@@ -7,7 +7,7 @@ export declare class ProductsService {
     getRecommendedProducts(productId: number): Promise<any>;
     logView(userId: number, productId: number): Promise<any>;
     getReviews(productId: number): Promise<any>;
-    createReview(productId: number, userId: number, rating: number, title: string, content: string, orderId?: number | null): Promise<{
+    createReview(productId: number, userId: number, rating: number, title: string, content: string, orderId: number): Promise<{
         insertId: any;
     }>;
 }

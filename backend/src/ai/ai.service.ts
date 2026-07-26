@@ -44,12 +44,12 @@ export class AiService {
     const data:ProductRow[]=await this.db.query(`
       SELECT p.product_id id,p.product_slug slug,p.product_name name,p.base_price price,
              c.category_name category,b.brand_name brand,pi.image_url,p.product_description description,
-             COALESCE(v.current_stock,0) stock
+             COALESCE(v.available_quantity,0) stock
       FROM products p
       JOIN categories c ON c.category_id=p.category_id
       LEFT JOIN brands b ON b.brand_id=p.brand_id
       LEFT JOIN product_images pi ON pi.product_id=p.product_id AND pi.is_thumbnail=TRUE
-      LEFT JOIN vw_product_stock v ON v.product_id=p.product_id
+      LEFT JOIN (SELECT product_id,SUM(available_quantity) available_quantity FROM vw_product_stock GROUP BY product_id) v ON v.product_id=p.product_id
       WHERE p.product_status='ACTIVE'
       ORDER BY p.created_at DESC LIMIT 100`);
     this.catalogCache={data,expiresAt:Date.now()+30_000};return data;

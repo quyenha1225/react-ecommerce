@@ -9,6 +9,7 @@ import About from "./about/About";
 import AdminDashboard from "./admin/AdminDashboard";
 import Contact from "./contact/Contact";
 import SearchResults from "./search/SearchResults";
+import Account from "./account/Account";
 
 function App() {
   return (
@@ -21,6 +22,7 @@ function App() {
         <Route path="/login" element={<Login />} />
 
         <Route path="/cart" element={<Cart />} />
+        <Route path="/account" element={<Account />} />
 
         <Route path="/products" element={<ProductList />} />
         <Route path="/search" element={<SearchResults />} />

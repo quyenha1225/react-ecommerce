@@ -234,7 +234,11 @@ CREATE TABLE IF NOT EXISTS product_variants (
 
     CONSTRAINT fk_product_variants_product
         FOREIGN KEY (product_id) REFERENCES products(product_id)
-        ON UPDATE CASCADE ON DELETE CASCADE
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    -- Ho tro FK tong hop de dam bao variant luon thuoc dung product.
+    UNIQUE KEY uq_product_variants_variant_product (variant_id, product_id),
+    CHECK (additional_price >= 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS product_logs (
@@ -293,11 +297,11 @@ CREATE TABLE IF NOT EXISTS inventory_transaction_types (
     inventory_type_name VARCHAR(100) NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- da them variant_id (nullable) de dong bo voi variant_inventory ben duoi
+-- Moi san pham ban duoc can co it nhat 1 variant; variant_id bat buoc de quan ly ton kho chinh xac.
 CREATE TABLE IF NOT EXISTS inventory_transactions (
     inventory_transaction_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     product_id BIGINT UNSIGNED NOT NULL,
-    variant_id BIGINT UNSIGNED NULL,
+    variant_id BIGINT UNSIGNED NOT NULL,
     supplier_id BIGINT UNSIGNED NULL,
     staff_user_id BIGINT UNSIGNED NULL,
     inventory_type_id BIGINT UNSIGNED NOT NULL,
@@ -310,9 +314,10 @@ CREATE TABLE IF NOT EXISTS inventory_transactions (
         FOREIGN KEY (product_id) REFERENCES products(product_id)
         ON UPDATE CASCADE ON DELETE RESTRICT,
 
-    CONSTRAINT fk_inventory_transactions_variant
-        FOREIGN KEY (variant_id) REFERENCES product_variants(variant_id)
-        ON UPDATE CASCADE ON DELETE SET NULL,
+    CONSTRAINT fk_inventory_transactions_product_variant
+        FOREIGN KEY (variant_id, product_id)
+        REFERENCES product_variants(variant_id, product_id)
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
 
     CONSTRAINT fk_inventory_transactions_supplier
         FOREIGN KEY (supplier_id) REFERENCES suppliers(supplier_id)
@@ -339,7 +344,11 @@ CREATE TABLE IF NOT EXISTS variant_inventory (
 
     CONSTRAINT fk_variant_inventory_variant
         FOREIGN KEY (variant_id) REFERENCES product_variants(variant_id)
-        ON UPDATE CASCADE ON DELETE CASCADE
+        ON UPDATE CASCADE ON DELETE CASCADE,
+
+    CHECK (stock_quantity >= 0),
+    CHECK (reserved_quantity >= 0),
+    CHECK (reserved_quantity <= stock_quantity)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS product_tags (
@@ -362,7 +371,60 @@ CREATE TABLE IF NOT EXISTS product_tag_mapping (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================
--- 5. CART
+-- 5. PROMOTION / DISCOUNT
+-- Ap dung khuyen mai cho toan product hoac rieng tung variant.
+-- Gia tri giam thuc te can duoc snapshot vao order_items khi dat hang.
+-- =========================================================
+
+CREATE TABLE IF NOT EXISTS promotions (
+    promotion_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    promotion_code VARCHAR(50) NOT NULL UNIQUE,
+    promotion_name VARCHAR(200) NOT NULL,
+    discount_type VARCHAR(20) NOT NULL,
+    discount_value DECIMAL(15,2) NOT NULL,
+    max_discount_amount DECIMAL(15,2) NULL,
+    start_at DATETIME NOT NULL,
+    end_at DATETIME NOT NULL,
+    promotion_status VARCHAR(30) NOT NULL DEFAULT 'ACTIVE',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CHECK (discount_type IN ('PERCENT', 'FIXED')),
+    CHECK (discount_value > 0),
+    CHECK (discount_type <> 'PERCENT' OR discount_value <= 100),
+    CHECK (max_discount_amount IS NULL OR max_discount_amount >= 0),
+    CHECK (end_at > start_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS promotion_products (
+    promotion_id BIGINT UNSIGNED NOT NULL,
+    product_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (promotion_id, product_id),
+
+    CONSTRAINT fk_promotion_products_promotion
+        FOREIGN KEY (promotion_id) REFERENCES promotions(promotion_id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_promotion_products_product
+        FOREIGN KEY (product_id) REFERENCES products(product_id)
+        ON UPDATE CASCADE ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS promotion_variants (
+    promotion_id BIGINT UNSIGNED NOT NULL,
+    product_id BIGINT UNSIGNED NOT NULL,
+    variant_id BIGINT UNSIGNED NOT NULL,
+    PRIMARY KEY (promotion_id, variant_id),
+
+    CONSTRAINT fk_promotion_variants_promotion
+        FOREIGN KEY (promotion_id) REFERENCES promotions(promotion_id)
+        ON UPDATE CASCADE ON DELETE CASCADE,
+    CONSTRAINT fk_promotion_variants_product_variant
+        FOREIGN KEY (variant_id, product_id)
+        REFERENCES product_variants(variant_id, product_id)
+        ON UPDATE RESTRICT ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- 6. CART
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS carts (
@@ -375,22 +437,14 @@ CREATE TABLE IF NOT EXISTS carts (
         ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- variant_key la generated column thay the IFNULL(variant_id, 0) truc tiep
--- trong PRIMARY KEY (MySQL khong cho phep functional key part trong PK).
--- LUU Y QUAN TRONG: vi variant_id la cot goc cua generated column
--- (variant_key), InnoDB KHONG CHO PHEP FK tren variant_id dung
--- CASCADE / SET NULL (loi 1215 "Cannot add foreign key constraint").
--- Vi vay FK nay phai dung RESTRICT: muon xoa/doi variant_id dang duoc
--- tham chieu trong cart_items thi phai xu ly o tang ung dung truoc
--- (xoa/cap nhat cart_items lien quan), MySQL se khong tu CASCADE.
+-- Moi dong gio hang tham chieu mot variant cu the cua product.
 CREATE TABLE IF NOT EXISTS cart_items (
     cart_id BIGINT UNSIGNED NOT NULL,
     product_id BIGINT UNSIGNED NOT NULL,
-    variant_id BIGINT UNSIGNED NULL,
-    variant_key BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(variant_id, 0)) STORED,
+    variant_id BIGINT UNSIGNED NOT NULL,
     cart_quantity INT NOT NULL,
     added_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    PRIMARY KEY (cart_id, product_id, variant_key),
+    PRIMARY KEY (cart_id, variant_id),
 
     CONSTRAINT fk_cart_items_cart
         FOREIGN KEY (cart_id) REFERENCES carts(cart_id)
@@ -400,15 +454,16 @@ CREATE TABLE IF NOT EXISTS cart_items (
         FOREIGN KEY (product_id) REFERENCES products(product_id)
         ON UPDATE CASCADE ON DELETE RESTRICT,
 
-    CONSTRAINT fk_cart_items_variant
-        FOREIGN KEY (variant_id) REFERENCES product_variants(variant_id)
+    CONSTRAINT fk_cart_items_product_variant
+        FOREIGN KEY (variant_id, product_id)
+        REFERENCES product_variants(variant_id, product_id)
         ON UPDATE RESTRICT ON DELETE RESTRICT,
 
     CHECK (cart_quantity > 0)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================
--- 6. ORDER
+-- 7. ORDER
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS order_statuses (
@@ -449,18 +504,16 @@ CREATE TABLE IF NOT EXISTS order_shipping_addresses (
         ON UPDATE CASCADE ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
--- variant_key la generated column thay the IFNULL(variant_id, 0) truc tiep
--- trong PRIMARY KEY. LUU Y: cung nhu cart_items, FK tren variant_id
--- KHONG duoc dung SET NULL / CASCADE vi variant_id la cot goc cua
--- generated column variant_key -> phai dung RESTRICT.
+-- Moi dong don hang luu variant cu the va gia/khuyen mai tai thoi diem dat.
 CREATE TABLE IF NOT EXISTS order_items (
     order_id BIGINT UNSIGNED NOT NULL,
     product_id BIGINT UNSIGNED NOT NULL,
-    variant_id BIGINT UNSIGNED NULL,
-    variant_key BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(variant_id, 0)) STORED,
+    variant_id BIGINT UNSIGNED NOT NULL,
     ordered_quantity INT NOT NULL,
     unit_price_at_order DECIMAL(15,2) NOT NULL,
-    PRIMARY KEY (order_id, product_id, variant_key),
+    discount_amount_at_order DECIMAL(15,2) NOT NULL DEFAULT 0,
+    final_unit_price DECIMAL(15,2) NOT NULL,
+    PRIMARY KEY (order_id, variant_id),
 
     CONSTRAINT fk_order_items_order
         FOREIGN KEY (order_id) REFERENCES orders(order_id)
@@ -470,12 +523,16 @@ CREATE TABLE IF NOT EXISTS order_items (
         FOREIGN KEY (product_id) REFERENCES products(product_id)
         ON UPDATE CASCADE ON DELETE RESTRICT,
 
-    CONSTRAINT fk_order_items_variant
-        FOREIGN KEY (variant_id) REFERENCES product_variants(variant_id)
+    CONSTRAINT fk_order_items_product_variant
+        FOREIGN KEY (variant_id, product_id)
+        REFERENCES product_variants(variant_id, product_id)
         ON UPDATE RESTRICT ON DELETE RESTRICT,
 
     CHECK (ordered_quantity > 0),
-    CHECK (unit_price_at_order >= 0)
+    CHECK (unit_price_at_order >= 0),
+    CHECK (discount_amount_at_order >= 0),
+    CHECK (final_unit_price >= 0),
+    CHECK (final_unit_price = unit_price_at_order - discount_amount_at_order)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE IF NOT EXISTS order_status_logs (
@@ -505,7 +562,7 @@ CREATE TABLE IF NOT EXISTS order_status_logs (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================
--- 7. PAYMENT
+-- 8. PAYMENT
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS payment_methods (
@@ -548,14 +605,15 @@ CREATE TABLE IF NOT EXISTS payments (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================
--- 8. PRODUCT REVIEW
+-- 9. PRODUCT REVIEW
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS product_reviews (
     review_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     product_id BIGINT UNSIGNED NOT NULL,
     user_id BIGINT UNSIGNED NOT NULL,
-    order_id BIGINT UNSIGNED NULL,
+    order_id BIGINT UNSIGNED NOT NULL,
+    variant_id BIGINT UNSIGNED NOT NULL,
     rating TINYINT UNSIGNED NOT NULL,
     review_title VARCHAR(255),
     review_content TEXT,
@@ -576,8 +634,14 @@ CREATE TABLE IF NOT EXISTS product_reviews (
 
     CONSTRAINT fk_product_reviews_order
         FOREIGN KEY (order_id) REFERENCES orders(order_id)
-        ON UPDATE CASCADE ON DELETE SET NULL,
+        ON UPDATE CASCADE ON DELETE RESTRICT,
 
+    CONSTRAINT fk_product_reviews_product_variant
+        FOREIGN KEY (variant_id, product_id)
+        REFERENCES product_variants(variant_id, product_id)
+        ON UPDATE RESTRICT ON DELETE RESTRICT,
+
+    UNIQUE KEY uq_review_once_per_order_product (user_id, order_id, product_id),
     CHECK (rating BETWEEN 1 AND 5)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
@@ -610,7 +674,7 @@ CREATE TABLE IF NOT EXISTS product_review_replies (
 
 
 -- =========================================================
--- 9. AI SEARCH
+-- 10. AI SEARCH
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS ai_search_logs (
@@ -655,7 +719,7 @@ CREATE TABLE IF NOT EXISTS ai_search_results (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================
--- 10. AUDIT LOG
+-- 11. AUDIT LOG
 -- =========================================================
 
 CREATE TABLE IF NOT EXISTS audit_logs (
@@ -670,6 +734,16 @@ CREATE TABLE IF NOT EXISTS audit_logs (
     CONSTRAINT fk_audit_logs_user
         FOREIGN KEY (actor_user_id) REFERENCES users(user_id)
         ON UPDATE CASCADE ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- Cấu hình AI là cấu trúc hệ thống nên đặt trong schema; seed chỉ UPSERT giá trị mẫu.
+CREATE TABLE IF NOT EXISTS ai_configs (
+    ai_config_id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    config_key VARCHAR(100) NOT NULL UNIQUE,
+    config_value VARCHAR(500) NULL,
+    config_description VARCHAR(255) NULL,
+    is_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- =========================================================
@@ -687,7 +761,7 @@ CREATE INDEX idx_inventory_product_date ON inventory_transactions(product_id, tr
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- =========================================================
--- 11. VIEW TINH TOAN
+-- 12. VIEW TINH TOAN
 -- =========================================================
 
 DROP VIEW IF EXISTS vw_best_selling_products;
@@ -699,28 +773,20 @@ CREATE VIEW vw_product_stock AS
 SELECT
     p.product_id,
     p.product_name,
-    COALESCE(
-        SUM(
-            CASE
-                WHEN itt.inventory_type_code = 'IN' THEN it.transaction_quantity
-                WHEN itt.inventory_type_code = 'OUT' THEN -it.transaction_quantity
-                WHEN itt.inventory_type_code = 'ADJUST' THEN it.transaction_quantity
-                ELSE 0
-            END
-        ), 0
-    ) AS current_stock
+    pv.variant_id,
+    pv.variant_name,
+    COALESCE(vi.stock_quantity, 0) AS stock_quantity,
+    COALESCE(vi.reserved_quantity, 0) AS reserved_quantity,
+    COALESCE(vi.stock_quantity - vi.reserved_quantity, 0) AS available_quantity
 FROM products p
-LEFT JOIN inventory_transactions it
-    ON p.product_id = it.product_id
-LEFT JOIN inventory_transaction_types itt
-    ON it.inventory_type_id = itt.inventory_type_id
-GROUP BY p.product_id, p.product_name;
+JOIN product_variants pv ON pv.product_id = p.product_id
+LEFT JOIN variant_inventory vi ON vi.variant_id = pv.variant_id;
 
 CREATE VIEW vw_order_totals AS
 SELECT
     o.order_id,
     o.order_code,
-    COALESCE(SUM(oi.ordered_quantity * oi.unit_price_at_order), 0) AS total_amount
+    COALESCE(SUM(oi.ordered_quantity * oi.final_unit_price), 0) AS total_amount
 FROM orders o
 LEFT JOIN order_items oi
     ON o.order_id = oi.order_id
@@ -734,7 +800,7 @@ SELECT
         SUM(
             CASE
                 WHEN os.order_status_code = 'DELIVERED'
-                THEN oi.ordered_quantity * oi.unit_price_at_order
+                THEN oi.ordered_quantity * oi.final_unit_price
                 ELSE 0
             END
         ), 0
@@ -793,6 +859,146 @@ CREATE TABLE IF NOT EXISTS user_view_history (
     INDEX idx_user_view_history_product (product_id),
     INDEX idx_user_view_history_user (user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- =========================================================
+-- TRIGGER KHO: inventory_transactions la lich su; variant_inventory la ton hien tai.
+-- Trigger chay cung transaction voi INSERT, nen neu cap nhat ton that bai thi INSERT cung rollback.
+-- =========================================================
+
+DROP TRIGGER IF EXISTS trg_inventory_before_insert;
+DROP TRIGGER IF EXISTS trg_inventory_after_insert;
+DROP TRIGGER IF EXISTS trg_inventory_block_update;
+DROP TRIGGER IF EXISTS trg_inventory_block_delete;
+DROP TRIGGER IF EXISTS trg_review_validate_before_insert;
+DROP TRIGGER IF EXISTS trg_review_validate_before_update;
+
+DELIMITER $$
+
+CREATE TRIGGER trg_inventory_before_insert
+BEFORE INSERT ON inventory_transactions
+FOR EACH ROW
+BEGIN
+    DECLARE v_type_code VARCHAR(30);
+    DECLARE v_current_stock INT DEFAULT 0;
+    DECLARE v_delta INT DEFAULT 0;
+
+    SELECT inventory_type_code INTO v_type_code
+    FROM inventory_transaction_types
+    WHERE inventory_type_id = NEW.inventory_type_id;
+
+    IF v_type_code NOT IN ('IN', 'OUT', 'ADJUST', 'RETURN') OR v_type_code IS NULL THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Loai giao dich kho khong duoc ho tro';
+    END IF;
+
+    SET v_delta = CASE
+        WHEN v_type_code IN ('IN', 'RETURN') THEN ABS(NEW.transaction_quantity)
+        WHEN v_type_code = 'OUT' THEN -ABS(NEW.transaction_quantity)
+        WHEN v_type_code = 'ADJUST' THEN NEW.transaction_quantity
+        ELSE 0
+    END;
+
+    SELECT COALESCE((
+        SELECT stock_quantity
+        FROM variant_inventory
+        WHERE variant_id = NEW.variant_id
+    ), 0) INTO v_current_stock;
+
+    IF v_current_stock + v_delta < 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Khong du ton kho de thuc hien giao dich';
+    END IF;
+END$$
+
+CREATE TRIGGER trg_inventory_after_insert
+AFTER INSERT ON inventory_transactions
+FOR EACH ROW
+BEGIN
+    DECLARE v_type_code VARCHAR(30);
+    DECLARE v_delta INT DEFAULT 0;
+
+    SELECT inventory_type_code INTO v_type_code
+    FROM inventory_transaction_types
+    WHERE inventory_type_id = NEW.inventory_type_id;
+
+    SET v_delta = CASE
+        WHEN v_type_code IN ('IN', 'RETURN') THEN ABS(NEW.transaction_quantity)
+        WHEN v_type_code = 'OUT' THEN -ABS(NEW.transaction_quantity)
+        WHEN v_type_code = 'ADJUST' THEN NEW.transaction_quantity
+        ELSE 0
+    END;
+
+    INSERT INTO variant_inventory (variant_id, stock_quantity, reserved_quantity)
+    VALUES (NEW.variant_id, v_delta, 0)
+    ON DUPLICATE KEY UPDATE
+        stock_quantity = stock_quantity + v_delta;
+END$$
+
+CREATE TRIGGER trg_inventory_block_update
+BEFORE UPDATE ON inventory_transactions
+FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = 'Khong duoc sua lich su kho; hay tao giao dich ADJUST';
+END$$
+
+CREATE TRIGGER trg_inventory_block_delete
+BEFORE DELETE ON inventory_transactions
+FOR EACH ROW
+BEGIN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT = 'Khong duoc xoa lich su kho; hay tao giao dich ADJUST';
+END$$
+
+CREATE TRIGGER trg_review_validate_before_insert
+BEFORE INSERT ON product_reviews
+FOR EACH ROW
+BEGIN
+    DECLARE v_valid INT DEFAULT 0;
+
+    SELECT COUNT(*) INTO v_valid
+    FROM orders o
+    JOIN order_statuses os ON os.order_status_id = o.order_status_id
+    JOIN order_items oi ON oi.order_id = o.order_id
+    WHERE o.order_id = NEW.order_id
+      AND o.customer_id = NEW.user_id
+      AND os.order_status_code = 'DELIVERED'
+      AND oi.product_id = NEW.product_id
+      AND oi.variant_id = NEW.variant_id;
+
+    IF v_valid = 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Chi duoc danh gia san pham trong don DELIVERED cua chinh ban';
+    END IF;
+
+    SET NEW.is_verified_purchase = TRUE;
+END$$
+
+CREATE TRIGGER trg_review_validate_before_update
+BEFORE UPDATE ON product_reviews
+FOR EACH ROW
+BEGIN
+    DECLARE v_valid INT DEFAULT 0;
+
+    SELECT COUNT(*) INTO v_valid
+    FROM orders o
+    JOIN order_statuses os ON os.order_status_id = o.order_status_id
+    JOIN order_items oi ON oi.order_id = o.order_id
+    WHERE o.order_id = NEW.order_id
+      AND o.customer_id = NEW.user_id
+      AND os.order_status_code = 'DELIVERED'
+      AND oi.product_id = NEW.product_id
+      AND oi.variant_id = NEW.variant_id;
+
+    IF v_valid = 0 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Danh gia khong khop don hang da giao';
+    END IF;
+
+    SET NEW.is_verified_purchase = TRUE;
+END$$
+
+DELIMITER ;
 
 -- =========================================================
 -- TRIGGER: tu dong cap nhat products.average_rating / review_count

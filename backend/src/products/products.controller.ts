@@ -56,7 +56,7 @@ export class ProductsController {
       body.rating,
       body.title ?? '',
       body.content ?? '',
-      body.orderId ?? null,
+      Number(body.orderId),
     );
   }
 }

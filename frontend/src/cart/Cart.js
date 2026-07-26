@@ -7,6 +7,7 @@ import { clearCart, getCart } from "../utils/cartStorage";
 import PaymentForm from "./PaymentForm";
 import Success from "./Success";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
 
 function formatPrice(price) {
   return price.toLocaleString("vi-VN") + "đ";
@@ -16,7 +17,9 @@ function Cart() {
   const [products, setProducts] = useState([]);
   const [step, setStep] = useState(1);
   const [finalTotal, setFinalTotal] = useState(0);
+  const [completedOrder, setCompletedOrder] = useState(null);
   const navigate = useNavigate();
+  const { session } = useAuth();
 
   useEffect(() => {
     function loadCart() {
@@ -95,10 +98,15 @@ function Cart() {
                     return;
                   }
 
+<<<<<<< HEAD
+                  if (!session) {
+                    alert("Vui lòng đăng nhập để đặt hàng và theo dõi đơn trong tài khoản.");
+=======
                   if (selectedProducts.length === 0) {
                     alert(
                       "Vui lòng tích chọn ít nhất 1 sản phẩm để thanh toán!",
                     );
+>>>>>>> ed9005cbd35251de2aec3528645f9f2c84897783
                     return;
                   }
 
@@ -123,10 +131,18 @@ function Cart() {
         {step === 3 && (
           <PaymentForm
             total={total}
+<<<<<<< HEAD
+            products={products}
+            onBack={() => setStep(2)}
+            onFinish={(order) => {
+              setCompletedOrder(order);
+              setFinalTotal(total); // Lưu lại tổng tiền trước khi xoá giỏ hàng
+=======
             selectedProducts={selectedProducts}
             onBack={() => setStep(2)}
             onFinish={() => {
               setFinalTotal(total);
+>>>>>>> ed9005cbd35251de2aec3528645f9f2c84897783
               clearCart();
               setProducts([]);
               setStep(4);
@@ -138,6 +154,7 @@ function Cart() {
         {step === 4 && (
           <Success
             total={finalTotal}
+            order={completedOrder}
             onHome={() => {
               localStorage.removeItem("customer-info");
               localStorage.removeItem("payment-method");

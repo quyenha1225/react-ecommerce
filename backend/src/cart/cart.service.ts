@@ -15,8 +15,15 @@ export class CartService {
       const cartId = carts[0].cart_id;
       await runner.query(`DELETE FROM cart_items WHERE cart_id=?`, [cartId]);
       for (const item of cartItems) {
-        const productId = Number(item.productId || item.id), quantity = Number(item.quantity), variantId = item.variantId ? Number(item.variantId) : null;
+        const productId = Number(item.productId || item.id), quantity = Number(item.quantity);
         if (!Number.isInteger(productId) || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) throw new BadRequestException('Invalid cart item');
+        const requestedVariant = item.variantId ? Number(item.variantId) : null;
+        const variants = await runner.query(
+          `SELECT variant_id FROM product_variants WHERE product_id=? AND variant_status='ACTIVE' AND (? IS NULL OR variant_id=?) ORDER BY is_default DESC,variant_id LIMIT 1`,
+          [productId, requestedVariant, requestedVariant],
+        );
+        if (!variants[0]) throw new BadRequestException(`Product ${productId} has no valid variant`);
+        const variantId = variants[0].variant_id;
         await runner.query(`INSERT INTO cart_items(cart_id,product_id,variant_id,cart_quantity) VALUES(?,?,?,?)`, [cartId, productId, variantId, quantity]);
       }
       await runner.commitTransaction();
