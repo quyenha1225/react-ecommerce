@@ -30,11 +30,7 @@ function CheckoutStepper({ step }) {
         <div
           key={item.number}
           className={`checkout-step ${
-            step === item.number
-              ? "active"
-              : step > item.number
-              ? "done"
-              : ""
+            step === item.number ? "active" : step > item.number ? "done" : ""
           }`}
         >
           <div className="step-circle">
@@ -47,9 +43,7 @@ function CheckoutStepper({ step }) {
 
           <span>{item.title}</span>
 
-          {index < steps.length - 1 && (
-            <div className="step-line"></div>
-          )}
+          {index < steps.length - 1 && <div className="step-line"></div>}
         </div>
       ))}
     </div>

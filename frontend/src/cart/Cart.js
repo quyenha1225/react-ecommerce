@@ -35,7 +35,11 @@ function Cart() {
     };
   }, []);
 
-  const total = products.reduce(
+  // Danh sách các sản phẩm được tích chọn (selected !== false)
+  const selectedProducts = products.filter((item) => item.selected !== false);
+
+  // Tính tổng tiền CHỈ cho những sản phẩm được tích chọn
+  const total = selectedProducts.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
@@ -72,7 +76,7 @@ function Cart() {
               <h3>Tóm tắt đơn hàng</h3>
 
               <div className="summary-row">
-                <span>Tạm tính</span>
+                <span>Tạm tính ({selectedProducts.length} món)</span>
                 <b>{formatPrice(total)}</b>
               </div>
 
@@ -94,8 +98,15 @@ function Cart() {
                     return;
                   }
 
+<<<<<<< HEAD
                   if (!session) {
                     alert("Vui lòng đăng nhập để đặt hàng và theo dõi đơn trong tài khoản.");
+=======
+                  if (selectedProducts.length === 0) {
+                    alert(
+                      "Vui lòng tích chọn ít nhất 1 sản phẩm để thanh toán!",
+                    );
+>>>>>>> ed9005cbd35251de2aec3528645f9f2c84897783
                     return;
                   }
 
@@ -109,17 +120,29 @@ function Cart() {
         )}
 
         {/* =================== BƯỚC 2 =================== */}
-        {step === 2 && <CustomerForm onNext={() => setStep(3)} />}
+        {step === 2 && (
+          <CustomerForm
+            selectedProducts={selectedProducts}
+            onNext={() => setStep(3)}
+          />
+        )}
 
         {/* =================== BƯỚC 3 =================== */}
         {step === 3 && (
           <PaymentForm
             total={total}
+<<<<<<< HEAD
             products={products}
             onBack={() => setStep(2)}
             onFinish={(order) => {
               setCompletedOrder(order);
               setFinalTotal(total); // Lưu lại tổng tiền trước khi xoá giỏ hàng
+=======
+            selectedProducts={selectedProducts}
+            onBack={() => setStep(2)}
+            onFinish={() => {
+              setFinalTotal(total);
+>>>>>>> ed9005cbd35251de2aec3528645f9f2c84897783
               clearCart();
               setProducts([]);
               setStep(4);

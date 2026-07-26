@@ -4,13 +4,17 @@ export function getCart() {
   try {
     const stored = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
     if (!Array.isArray(stored)) return [];
-    return stored.filter(item => item && item.id !== undefined).map(item => ({
-      ...item,
-      price: Math.max(0, Number(item.price) || 0),
-      oldPrice: Math.max(0, Number(item.oldPrice ?? item.price) || 0),
-      quantity: Math.max(1, Number.parseInt(item.quantity, 10) || 1),
-      image: item.image || item.image_url || "",
-    }));
+    return stored
+      .filter((item) => item && item.id !== undefined)
+      .map((item) => ({
+        ...item,
+        price: Math.max(0, Number(item.price) || 0),
+        oldPrice: Math.max(0, Number(item.oldPrice ?? item.price) || 0),
+        quantity: Math.max(1, Number.parseInt(item.quantity, 10) || 1),
+        image: item.image || item.image_url || "",
+        // Mặc định selected là true nếu sản phẩm chưa có thuộc tính này
+        selected: item.selected !== undefined ? item.selected : true,
+      }));
   } catch {
     localStorage.removeItem(CART_KEY);
     return [];
@@ -24,9 +28,12 @@ export function saveCart(cart) {
   window.dispatchEvent(
     new CustomEvent("eshop:cart-updated", {
       detail: {
-        count: safeCart.reduce((sum, item) => sum + (Number(item.quantity) || 0), 0),
+        count: safeCart.reduce(
+          (sum, item) => sum + (Number(item.quantity) || 0),
+          0,
+        ),
       },
-    })
+    }),
   );
 }
 
@@ -45,6 +52,7 @@ export function addToCart(product) {
       oldPrice: Math.max(0, Number(product.oldPrice ?? product.price) || 0),
       image: product.image || product.image_url || "",
       quantity: 1,
+      selected: true, // Mặc định khi thêm vào giỏ là được chọn
     });
   }
 
@@ -78,4 +86,19 @@ export function decreaseQuantity(id) {
 
 export function clearCart() {
   saveCart([]);
+}
+
+export function toggleCartItemSelect(id) {
+  const cart = getCart();
+  const updatedCart = cart.map((item) => {
+    if (String(item.id) === String(id)) {
+      return {
+        ...item,
+        selected: item.selected !== undefined ? !item.selected : false,
+      };
+    }
+    return item;
+  });
+
+  saveCart(updatedCart);
 }

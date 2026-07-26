@@ -957,6 +957,7 @@
         pay.transaction_code = CONCAT('TXN-', o.order_code),
         pay.paid_at = CASE WHEN s.payment_status_code = 'PAID' THEN o.order_created_at ELSE NULL END;
 
+<<<<<<< HEAD
     INSERT INTO payments(
       order_id, payment_method_id, payment_status_id, payment_code,
       payment_amount, transaction_code, paid_at
@@ -1108,3 +1109,71 @@
     UNION ALL SELECT 'promotion_variants', COUNT(*) FROM promotion_variants
     UNION ALL SELECT 'product_reviews', COUNT(*) FROM product_reviews
     UNION ALL SELECT 'order_items', COUNT(*) FROM order_items;
+=======
+SELECT 'roles' AS table_name, COUNT(*) AS total_rows FROM roles
+UNION ALL SELECT 'permissions', COUNT(*) FROM permissions
+UNION ALL SELECT 'users', COUNT(*) FROM users
+UNION ALL SELECT 'categories', COUNT(*) FROM categories
+UNION ALL SELECT 'brands', COUNT(*) FROM brands
+UNION ALL SELECT 'suppliers', COUNT(*) FROM suppliers
+UNION ALL SELECT 'products', COUNT(*) FROM products
+UNION ALL SELECT 'product_images', COUNT(*) FROM product_images
+UNION ALL SELECT 'product_variants', COUNT(*) FROM product_variants
+UNION ALL SELECT 'orders', COUNT(*) FROM orders
+UNION ALL SELECT 'payments', COUNT(*) FROM payments
+UNION ALL SELECT 'inventory_transactions', COUNT(*) FROM inventory_transactions;
+
+
+-- ===========================================================================
+-- Them product test QR
+USE cnpm_db;
+
+-- 1. Thêm phụ kiện công nghệ: Cáp Sạc Nhanh Anker USB-C (Phụ kiện: category_id = 3, Anker: brand_id = 2)
+INSERT INTO products (
+    category_id, 
+    brand_id, 
+    product_name, 
+    product_slug, 
+    sku, 
+    base_price, 
+    product_description, 
+    product_status
+)
+VALUES (
+    3, 
+    2, 
+    'Cáp Sạc Nhanh Anker USB-C 1m', 
+    'cap-sac-nhanh-anker-usb-c-1m', 
+    'ANKER-CABLE-1M', 
+    2000, 
+    'Cáp sạc nhanh USB-C sang USB-C độ bền cao, hỗ trợ truyền dữ liệu và sạc nhanh công suất lớn.', 
+    'ACTIVE'
+);
+
+-- 2. Tạo biến thể mặc định có sẵn 100 cái trong kho
+INSERT INTO product_variants (
+    product_id, 
+    variant_name, 
+    sku, 
+    additional_price, 
+    variant_status, 
+    is_default
+)
+VALUES (
+    LAST_INSERT_ID(), 
+    'Mặc định - Màu Đen', 
+    'ANKER-CABLE-1M-BLK', 
+    0, 
+    'ACTIVE', 
+    TRUE
+);
+
+-- 3. Thêm ảnh đại diện hiển thị chuẩn nét cho cáp sạc Anker
+INSERT INTO product_images (product_id, image_url, is_thumbnail, sort_order)
+SELECT product_id, 
+       'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?auto=format&fit=crop&w=600&q=80', 
+       TRUE, 
+       1
+FROM products 
+WHERE product_slug = 'cap-sac-nhanh-anker-usb-c-1m' 
+>>>>>>> ed9005cbd35251de2aec3528645f9f2c84897783
