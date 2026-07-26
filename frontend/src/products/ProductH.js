@@ -25,7 +25,8 @@ function ProductH(props) {
     : price;
 
   function handleAddToCart() {
-    addToCart({id:product.id,name:productName,brand:product.brand||category,price:finalPrice,oldPrice:price,image:product.image_url});
+    const added = addToCart({id:product.id,name:productName,brand:product.brand||category,price:finalPrice,oldPrice:price,image:product.image_url});
+    if (!added) { alert("Tài khoản quản trị không sử dụng chức năng mua hàng."); return; }
     setIsAdded(true);
 
     window.setTimeout(() => {

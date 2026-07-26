@@ -17,6 +17,7 @@ function Header({ guestMode = false }) {
   const [searchQuery, setSearchQuery] = useState("");
   const [aiMode, setAiMode] = useState(false);
   const { session, logout } = useAuth();
+  const isManagementUser = ["ADMIN", "STAFF"].includes(session?.user?.role);
   const categoryDropdownRef = useRef(null);
   const navigate = useNavigate();
 
@@ -119,11 +120,11 @@ function Header({ guestMode = false }) {
               <span>Liên hệ</span>
             </Link>
 
-            <Link to="/cart" className="eshop-action-item eshop-cart-action">
+            {!isManagementUser && <Link to="/cart" className="eshop-action-item eshop-cart-action">
               <FontAwesomeIcon icon={["fas", "shopping-cart"]} />
               <span>Giỏ hàng</span>
               <b key={cartCount}>{cartCount}</b>
-            </Link>
+            </Link>}
             {isGuest && <span className="guest-badge"><FontAwesomeIcon icon={["fas","user-secret"]}/> Khách vãng lai</span>}
             {!isGuest && session ? <div className="eshop-account-session">
               {["ADMIN", "STAFF"].includes(session.user.role) && <Link to="/admin" className="eshop-user-btn"><FontAwesomeIcon icon={["fas","chart-line"]}/><span>Quản trị</span></Link>}

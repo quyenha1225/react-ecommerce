@@ -8,7 +8,7 @@ function FeatureProduct() {
   const [isAdded, setIsAdded] = useState(false);
 
   function handleAddToCart() {
-    addToCart({
+    const added = addToCart({
       id: 1,
       name: "Nillkin iPhone X cover",
       brand: "Phụ kiện",
@@ -18,6 +18,7 @@ function FeatureProduct() {
       image: Image,
     });
 
+    if (!added) { alert("Tài khoản quản trị không sử dụng chức năng mua hàng."); return; }
     setIsAdded(true);
 
     setTimeout(() => {

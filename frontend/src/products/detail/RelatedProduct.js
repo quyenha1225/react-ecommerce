@@ -1,2 +1,13 @@
 import { Link } from "react-router-dom";
-export default function RelatedProduct({product}){if(!product)return null;return <Link to={`/products/${product.slug||product.id}`} className="col text-decoration-none"><article className="card shadow-sm h-100"><img className="card-img-top cover" height="200" alt={product.name} src={product.image_url}/><div className="card-body"><h5 className="card-title text-dark">{product.name}</h5><strong className="text-danger">{Number(product.price||0).toLocaleString("vi-VN")} ₫</strong></div></article></Link>}
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
+export default function RelatedProduct({ product }) {
+  if (!product) return null;
+  return <Link to={`/products/${product.slug || product.id}`} className="pd-related-card">
+    <div><img src={product.image_url} alt={product.name} loading="lazy"/><span>Xem nhanh</span></div>
+    <small>Sản phẩm chính hãng</small>
+    <h3>{product.name}</h3>
+    <strong>{Number(product.price || 0).toLocaleString("vi-VN")} ₫</strong>
+    <p><FontAwesomeIcon icon={["fas","truck"]}/> Giao hàng toàn quốc</p>
+  </Link>;
+}

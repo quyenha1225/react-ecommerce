@@ -51,7 +51,13 @@ export class ProductsService {
       `
       SELECT 
         p.product_id AS id, 
+        p.product_slug AS slug,
         p.product_name AS name, 
+        p.sku,
+        p.barcode,
+        p.manufacturer_part_number AS manufacturerPartNumber,
+        p.release_year AS releaseYear,
+        p.origin_country AS originCountry,
         p.product_description AS description,
         p.base_price AS price, 
         p.warranty_months AS warrantyMonths,
@@ -81,8 +87,8 @@ export class ProductsService {
     const product = rows[0];
     if (!product) return null;
 
-    // Lấy danh sách Thông số kỹ thuật
-    const specifications = await this.dataSource.query(
+    const [specifications, variants, images, promotions, reviews] = await Promise.all([
+      this.dataSource.query(
       `
       SELECT 
         pa.attribute_id, 
@@ -98,10 +104,9 @@ export class ProductsService {
       ORDER BY pa.display_order ASC
       `,
       [product.id],
-    );
+      ),
 
-    // Lấy danh sách Cấu hình/Phiên bản (Variants)
-    const variants = await this.dataSource.query(
+      this.dataSource.query(
       `
       SELECT 
         pv.variant_id, 
@@ -114,16 +119,41 @@ export class ProductsService {
         pv.cpu_option, 
         pv.additional_price, 
         pv.is_default,
-        COALESCE(vi.stock_quantity, 0) AS stock_quantity
+        COALESCE(vi.stock_quantity, 0) AS stock_quantity,
+        COALESCE(vi.reserved_quantity, 0) AS reserved_quantity,
+        COALESCE(vi.stock_quantity - vi.reserved_quantity, 0) AS available_quantity
       FROM product_variants pv
       LEFT JOIN variant_inventory vi ON pv.variant_id = vi.variant_id
       WHERE pv.product_id = ? AND pv.variant_status = 'ACTIVE'
       `,
-      [product.id],
-    );
+      [product.id]),
+
+      this.dataSource.query(
+        `SELECT image_id, image_url, is_thumbnail, sort_order
+         FROM product_images WHERE product_id=?
+         ORDER BY is_thumbnail DESC, sort_order, image_id`,
+        [product.id],
+      ),
+
+      this.dataSource.query(
+        `SELECT pr.promotion_code,pr.promotion_name,pr.discount_type,
+                pr.discount_value,pr.max_discount_amount,pr.end_at
+         FROM promotions pr
+         JOIN promotion_products pp ON pp.promotion_id=pr.promotion_id
+         WHERE pp.product_id=? AND pr.promotion_status='ACTIVE'
+           AND NOW() BETWEEN pr.start_at AND pr.end_at
+         ORDER BY pr.discount_value DESC`,
+        [product.id],
+      ),
+
+      this.getReviews(product.id),
+    ]);
 
     product.specifications = specifications;
     product.variants = variants;
+    product.images = images;
+    product.promotions = promotions;
+    product.reviews = reviews;
 
     return product;
   }

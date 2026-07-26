@@ -1,5 +1,14 @@
 const CART_KEY = "eshop-cart";
 
+export function canCurrentUserShop() {
+  try {
+    const session = JSON.parse(localStorage.getItem("eshop_session") || "null");
+    return !["ADMIN", "STAFF"].includes(session?.user?.role);
+  } catch {
+    return true;
+  }
+}
+
 export function getCart() {
   try {
     const stored = JSON.parse(localStorage.getItem(CART_KEY) || "[]");
@@ -38,6 +47,7 @@ export function saveCart(cart) {
 }
 
 export function addToCart(product) {
+  if (!canCurrentUserShop()) return false;
   if (!product || product.id === undefined || !product.name) return false;
   const cart = getCart();
   const productId = String(product.id);

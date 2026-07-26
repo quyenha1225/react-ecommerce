@@ -82,6 +82,8 @@ export class CustomerService {
   }
 
   async createOrder(userId: number, body: CreateOrderDto) {
+    const roles = await this.db.query(`SELECT r.role_code FROM users u JOIN roles r ON r.role_id=u.role_id WHERE u.user_id=?`, [userId]);
+    if (roles[0]?.role_code !== 'CUSTOMER') throw new ForbiddenException('Chỉ tài khoản khách hàng mới có thể đặt hàng');
     if (!body.items?.length || body.items.length > 100) throw new BadRequestException('Giỏ hàng không hợp lệ');
     const runner = this.db.createQueryRunner(); await runner.connect(); await runner.startTransaction();
     try {

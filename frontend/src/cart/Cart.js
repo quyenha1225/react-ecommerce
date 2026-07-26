@@ -6,7 +6,7 @@ import CustomerForm from "./CustomerForm";
 import { clearCart, getCart } from "../utils/cartStorage";
 import PaymentForm from "./PaymentForm";
 import Success from "./Success";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 
 function formatPrice(price) {
@@ -20,6 +20,7 @@ function Cart() {
   const [completedOrder, setCompletedOrder] = useState(null);
   const navigate = useNavigate();
   const { session } = useAuth();
+  const isManagementUser = ["ADMIN", "STAFF"].includes(session?.user?.role);
 
   useEffect(() => {
     function loadCart() {
@@ -43,6 +44,8 @@ function Cart() {
     (sum, item) => sum + item.price * item.quantity,
     0,
   );
+
+  if (isManagementUser) return <Navigate to="/admin" replace />;
 
   return (
     <div className="cart-page">

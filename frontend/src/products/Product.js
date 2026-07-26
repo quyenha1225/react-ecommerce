@@ -28,7 +28,7 @@ function Product({ product = {}, percentOff }) {
     : price;
 
   function handleAddToCart() {
-    addToCart({
+    const added = addToCart({
       id: product.id,
       name: productName,
       brand: category,
@@ -38,6 +38,10 @@ function Product({ product = {}, percentOff }) {
       image: imageUrl,
     });
 
+    if (!added) {
+      alert("Tài khoản quản trị không sử dụng chức năng mua hàng.");
+      return;
+    }
     setIsAdded(true);
 
     setTimeout(() => {
