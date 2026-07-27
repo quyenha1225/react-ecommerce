@@ -28,8 +28,14 @@ export default tseslint.config(
     rules: {
       '@typescript-eslint/no-explicit-any': 'off',
       '@typescript-eslint/no-floating-promises': 'warn',
-      '@typescript-eslint/no-unsafe-argument': 'warn',
-      "prettier/prettier": ["error", { endOfLine: "auto" }],
+      '@typescript-eslint/no-unsafe-argument': 'off',
+      // TypeORM's raw SQL API intentionally returns `any`. These rules otherwise
+      // report every query result instead of actionable application errors.
+      '@typescript-eslint/no-unsafe-assignment': 'off',
+      '@typescript-eslint/no-unsafe-call': 'off',
+      '@typescript-eslint/no-unsafe-member-access': 'off',
+      '@typescript-eslint/no-unsafe-return': 'off',
+      'prettier/prettier': ['error', { endOfLine: 'auto' }],
     },
   },
 );

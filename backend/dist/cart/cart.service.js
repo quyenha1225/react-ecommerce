@@ -30,7 +30,10 @@ let CartService = class CartService {
             await runner.query(`DELETE FROM cart_items WHERE cart_id=?`, [cartId]);
             for (const item of cartItems) {
                 const productId = Number(item.productId || item.id), quantity = Number(item.quantity);
-                if (!Number.isInteger(productId) || !Number.isInteger(quantity) || quantity < 1 || quantity > 99)
+                if (!Number.isInteger(productId) ||
+                    !Number.isInteger(quantity) ||
+                    quantity < 1 ||
+                    quantity > 99)
                     throw new common_1.BadRequestException('Invalid cart item');
                 const requestedVariant = item.variantId ? Number(item.variantId) : null;
                 const variants = await runner.query(`SELECT variant_id FROM product_variants WHERE product_id=? AND variant_status='ACTIVE' AND (? IS NULL OR variant_id=?) ORDER BY is_default DESC,variant_id LIMIT 1`, [productId, requestedVariant, requestedVariant]);

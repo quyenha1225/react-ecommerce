@@ -11,8 +11,14 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
       inject: [ConfigService],
       useFactory: (config: ConfigService) => {
         const secret = config.get<string>('JWT_SECRET');
-        if (!secret || secret.length < 32) throw new Error('JWT_SECRET must contain at least 32 characters');
-        return { secret, signOptions: { expiresIn: config.get<string>('JWT_EXPIRATION') || '2h' } as any };
+        if (!secret || secret.length < 32)
+          throw new Error('JWT_SECRET must contain at least 32 characters');
+        return {
+          secret,
+          signOptions: {
+            expiresIn: config.get<string>('JWT_EXPIRATION') || '2h',
+          } as any,
+        };
       },
     }),
   ],

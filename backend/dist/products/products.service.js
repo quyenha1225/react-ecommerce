@@ -191,7 +191,15 @@ let ProductsService = class ProductsService {
       INSERT INTO product_reviews
         (product_id, user_id, order_id, variant_id, rating, review_title, review_content, is_verified_purchase, review_status)
       VALUES (?, ?, ?, ?, ?, ?, ?, TRUE, 'PENDING')
-      `, [productId, userId, orderId, purchased[0].variant_id, rating, title, content]);
+      `, [
+            productId,
+            userId,
+            orderId,
+            purchased[0].variant_id,
+            rating,
+            title,
+            content,
+        ]);
         return { insertId: result.insertId };
     }
 };

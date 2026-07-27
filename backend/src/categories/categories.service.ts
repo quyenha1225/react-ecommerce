@@ -48,11 +48,7 @@ export class CategoriesService {
     const result = await this.dataSource.query(
       `INSERT INTO categories (category_name, category_slug, parent_category_id) 
        VALUES (?, ?, ?)`,
-      [
-        dto.category_name,
-        slug,
-        dto.parent_category_id || null,
-      ],
+      [dto.category_name, slug, dto.parent_category_id || null],
     );
 
     return {

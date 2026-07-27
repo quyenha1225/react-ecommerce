@@ -1,4 +1,17 @@
-import { IsArray, IsEmail, IsIn, IsInt, IsNotEmpty, IsOptional, IsString, Matches, MaxLength, Min, MinLength, ValidateNested } from 'class-validator';
+import {
+  IsArray,
+  IsEmail,
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Matches,
+  MaxLength,
+  Min,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateProfileDto {
@@ -9,7 +22,8 @@ export class UpdateProfileDto {
 
 export class ChangePasswordDto {
   @IsString() @MinLength(1) currentPassword: string;
-  @IsString() @MinLength(10)
+  @IsString()
+  @MinLength(10)
   @Matches(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).+$/)
   newPassword: string;
 }
@@ -31,7 +45,10 @@ export class CheckoutItemDto {
 }
 
 export class CreateOrderDto {
-  @IsArray() @ValidateNested({ each: true }) @Type(() => CheckoutItemDto) items: CheckoutItemDto[];
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => CheckoutItemDto)
+  items: CheckoutItemDto[];
   @IsIn(['COD', 'QR_BANKING']) paymentMethod: 'COD' | 'QR_BANKING';
   @ValidateNested() @Type(() => AddressDto) shipping: AddressDto;
   @IsOptional() @IsString() @MaxLength(255) note?: string;

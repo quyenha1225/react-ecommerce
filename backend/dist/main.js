@@ -10,7 +10,11 @@ async function bootstrap() {
         credentials: true,
     });
     app.setGlobalPrefix('api');
-    app.useGlobalPipes(new common_1.ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+    app.useGlobalPipes(new common_1.ValidationPipe({
+        whitelist: true,
+        forbidNonWhitelisted: true,
+        transform: true,
+    }));
     app.use((_req, res, next) => {
         res.setHeader('X-Content-Type-Options', 'nosniff');
         res.setHeader('X-Frame-Options', 'DENY');
@@ -20,5 +24,5 @@ async function bootstrap() {
     await app.listen(Number(process.env.PORT) || 3001);
     console.log(`Application is running on: ${await app.getUrl()}`);
 }
-bootstrap();
+void bootstrap();
 //# sourceMappingURL=main.js.map

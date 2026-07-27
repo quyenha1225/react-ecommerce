@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { UpdateUserDto, ChangePasswordDto } from './dto/update-user.dto';
@@ -13,7 +17,7 @@ export class UsersService {
       `SELECT u.user_id, u.user_full_name, u.user_email, u.user_phone, u.account_status, u.created_at, r.role_name, r.role_code 
        FROM users u 
        LEFT JOIN roles r ON u.role_id = r.role_id 
-       ORDER BY u.user_id DESC`
+       ORDER BY u.user_id DESC`,
     );
     return { success: true, data: users };
   }
@@ -25,7 +29,7 @@ export class UsersService {
        FROM users u 
        LEFT JOIN roles r ON u.role_id = r.role_id 
        WHERE u.user_id = ? LIMIT 1`,
-      [id]
+      [id],
     );
 
     if (!users[0]) {
@@ -62,7 +66,7 @@ export class UsersService {
     values.push(userId);
     await this.dataSource.query(
       `UPDATE users SET ${updates.join(', ')} WHERE user_id = ?`,
-      values
+      values,
     );
 
     return { success: true, message: 'Cập nhật thông tin thành công' };
@@ -72,14 +76,17 @@ export class UsersService {
   async changePassword(userId: number, dto: ChangePasswordDto) {
     const rows = await this.dataSource.query(
       `SELECT password_hash FROM users WHERE user_id = ? LIMIT 1`,
-      [userId]
+      [userId],
     );
 
     if (!rows[0]) {
       throw new NotFoundException('Không tìm thấy tài khoản');
     }
 
-    const isMatch = await bcrypt.compare(dto.oldPassword, rows[0].password_hash);
+    const isMatch = await bcrypt.compare(
+      dto.oldPassword,
+      rows[0].password_hash,
+    );
     if (!isMatch) {
       throw new BadRequestException('Mật khẩu cũ không chính xác');
     }
@@ -89,7 +96,7 @@ export class UsersService {
 
     await this.dataSource.query(
       `UPDATE users SET password_hash = ? WHERE user_id = ?`,
-      [newPasswordHash, userId]
+      [newPasswordHash, userId],
     );
 
     return { success: true, message: 'Đổi mật khẩu thành công' };

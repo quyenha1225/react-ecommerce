@@ -929,9 +929,10 @@ BEGIN
     END;
 
     INSERT INTO variant_inventory (variant_id, stock_quantity, reserved_quantity)
-    VALUES (NEW.variant_id, v_delta, 0)
+    VALUES (NEW.variant_id, GREATEST(0, v_delta), 0)
     ON DUPLICATE KEY UPDATE
-        stock_quantity = stock_quantity + v_delta;
+        stock_quantity = GREATEST(0, stock_quantity + v_delta),
+        reserved_quantity = LEAST(reserved_quantity, stock_quantity);
 END$$
 
 CREATE TRIGGER trg_inventory_block_update

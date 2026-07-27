@@ -153,11 +153,10 @@ export class AuthService {
     };
   }
 
-  async validateToken(token: string) {
+  validateToken(token: string): unknown {
     try {
-      const decoded = this.jwtService.verify(token);
-      return decoded;
-    } catch (err) {
+      return this.jwtService.verify(token);
+    } catch {
       throw new UnauthorizedException('Invalid token');
     }
   }

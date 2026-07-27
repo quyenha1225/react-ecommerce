@@ -13,7 +13,13 @@ async function bootstrap() {
 
   // Chạy backend ở port 3001 để tránh trùng với ReactJS
   app.setGlobalPrefix('api');
-  app.useGlobalPipes(new ValidationPipe({ whitelist: true, forbidNonWhitelisted: true, transform: true }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
   app.use((_req: any, res: any, next: any) => {
     res.setHeader('X-Content-Type-Options', 'nosniff');
     res.setHeader('X-Frame-Options', 'DENY');
@@ -23,4 +29,4 @@ async function bootstrap() {
   await app.listen(Number(process.env.PORT) || 3001);
   console.log(`Application is running on: ${await app.getUrl()}`);
 }
-bootstrap();
+void bootstrap();

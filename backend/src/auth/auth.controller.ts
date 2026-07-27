@@ -1,4 +1,12 @@
-import { Controller, Post, Body, Get, Req, Res, UseGuards } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Get,
+  Req,
+  Res,
+  UseGuards,
+} from '@nestjs/common';
 import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { CreateUserDto } from '../users/dto/create-user.dto';
@@ -10,7 +18,10 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() createUserDto: CreateUserDto, @Res({ passthrough: true }) response: Response) {
+  async register(
+    @Body() createUserDto: CreateUserDto,
+    @Res({ passthrough: true }) response: Response,
+  ) {
     const result = await this.authService.register(createUserDto);
     this.setAuthCookie(response, result.token);
     return { ...result, token: undefined };
@@ -28,7 +39,9 @@ export class AuthController {
 
   @Get('me')
   @UseGuards(JwtAuthGuard)
-  me(@Req() request: any) { return { success: true, user: request.user }; }
+  me(@Req() request: any) {
+    return { success: true, user: request.user };
+  }
 
   @Post('logout')
   logout(@Res({ passthrough: true }) response: Response) {
@@ -40,7 +53,9 @@ export class AuthController {
     response.cookie('eshop_auth', token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax', path: '/', maxAge: 7 * 24 * 60 * 60 * 1000,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 7 * 24 * 60 * 60 * 1000,
     });
   }
 }

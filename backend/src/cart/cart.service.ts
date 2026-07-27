@@ -6,30 +6,55 @@ export class CartService {
   constructor(private readonly dataSource: DataSource) {}
 
   async saveCart(userId: number, cartItems: any[]) {
-    if (!Array.isArray(cartItems) || cartItems.length > 100) throw new BadRequestException('Invalid cart items');
+    if (!Array.isArray(cartItems) || cartItems.length > 100)
+      throw new BadRequestException('Invalid cart items');
     const runner = this.dataSource.createQueryRunner();
-    await runner.connect(); await runner.startTransaction();
+    await runner.connect();
+    await runner.startTransaction();
     try {
-      await runner.query(`INSERT INTO carts(customer_id) VALUES(?) ON DUPLICATE KEY UPDATE customer_id=VALUES(customer_id)`, [userId]);
-      const carts = await runner.query(`SELECT cart_id FROM carts WHERE customer_id=?`, [userId]);
+      await runner.query(
+        `INSERT INTO carts(customer_id) VALUES(?) ON DUPLICATE KEY UPDATE customer_id=VALUES(customer_id)`,
+        [userId],
+      );
+      const carts = await runner.query(
+        `SELECT cart_id FROM carts WHERE customer_id=?`,
+        [userId],
+      );
       const cartId = carts[0].cart_id;
       await runner.query(`DELETE FROM cart_items WHERE cart_id=?`, [cartId]);
       for (const item of cartItems) {
-        const productId = Number(item.productId || item.id), quantity = Number(item.quantity);
-        if (!Number.isInteger(productId) || !Number.isInteger(quantity) || quantity < 1 || quantity > 99) throw new BadRequestException('Invalid cart item');
+        const productId = Number(item.productId || item.id),
+          quantity = Number(item.quantity);
+        if (
+          !Number.isInteger(productId) ||
+          !Number.isInteger(quantity) ||
+          quantity < 1 ||
+          quantity > 99
+        )
+          throw new BadRequestException('Invalid cart item');
         const requestedVariant = item.variantId ? Number(item.variantId) : null;
         const variants = await runner.query(
           `SELECT variant_id FROM product_variants WHERE product_id=? AND variant_status='ACTIVE' AND (? IS NULL OR variant_id=?) ORDER BY is_default DESC,variant_id LIMIT 1`,
           [productId, requestedVariant, requestedVariant],
         );
-        if (!variants[0]) throw new BadRequestException(`Product ${productId} has no valid variant`);
+        if (!variants[0])
+          throw new BadRequestException(
+            `Product ${productId} has no valid variant`,
+          );
         const variantId = variants[0].variant_id;
-        await runner.query(`INSERT INTO cart_items(cart_id,product_id,variant_id,cart_quantity) VALUES(?,?,?,?)`, [cartId, productId, variantId, quantity]);
+        await runner.query(
+          `INSERT INTO cart_items(cart_id,product_id,variant_id,cart_quantity) VALUES(?,?,?,?)`,
+          [cartId, productId, variantId, quantity],
+        );
       }
       await runner.commitTransaction();
       return { success: true, itemsCount: cartItems.length };
-    } catch (error) { await runner.rollbackTransaction(); throw error; }
-    finally { await runner.release(); }
+    } catch (error) {
+      await runner.rollbackTransaction();
+      throw error;
+    } finally {
+      await runner.release();
+    }
   }
 
   async getCart(userId: number) {
@@ -38,7 +63,8 @@ export class CartService {
        p.product_name AS name,p.base_price+COALESCE(v.additional_price,0) AS price,pi.image_url
        FROM carts c JOIN cart_items ci ON ci.cart_id=c.cart_id JOIN products p ON p.product_id=ci.product_id
        LEFT JOIN product_variants v ON v.variant_id=ci.variant_id
-       LEFT JOIN product_images pi ON pi.product_id=p.product_id AND pi.is_thumbnail=TRUE WHERE c.customer_id=?`, [userId],
+       LEFT JOIN product_images pi ON pi.product_id=p.product_id AND pi.is_thumbnail=TRUE WHERE c.customer_id=?`,
+      [userId],
     );
     return { success: true, items };
   }

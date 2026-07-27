@@ -25,7 +25,12 @@ exports.AuthModule = AuthModule = __decorate([
                     const secret = config.get('JWT_SECRET');
                     if (!secret || secret.length < 32)
                         throw new Error('JWT_SECRET must contain at least 32 characters');
-                    return { secret, signOptions: { expiresIn: config.get('JWT_EXPIRATION') || '2h' } };
+                    return {
+                        secret,
+                        signOptions: {
+                            expiresIn: config.get('JWT_EXPIRATION') || '2h',
+                        },
+                    };
                 },
             }),
         ],

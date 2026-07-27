@@ -1,4 +1,11 @@
-import { Controller, Post, Get, Body, UseGuards, Request } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Get,
+  Body,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
 import { CartService } from './cart.service';
 import { JwtAuthGuard } from '../security/jwt-auth.guard';
 
@@ -8,9 +15,7 @@ export class CartController {
   constructor(private readonly cartService: CartService) {}
 
   @Post()
-  async saveCart(
-    @Body() body: { items: any[] }, @Request() req: any
-  ) {
+  async saveCart(@Body() body: { items: any[] }, @Request() req: any) {
     return await this.cartService.saveCart(req.user.id, body.items);
   }
 

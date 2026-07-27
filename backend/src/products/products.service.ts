@@ -87,9 +87,10 @@ export class ProductsService {
     const product = rows[0];
     if (!product) return null;
 
-    const [specifications, variants, images, promotions, reviews] = await Promise.all([
-      this.dataSource.query(
-      `
+    const [specifications, variants, images, promotions, reviews] =
+      await Promise.all([
+        this.dataSource.query(
+          `
       SELECT 
         pa.attribute_id, 
         pa.attribute_name, 
@@ -103,11 +104,11 @@ export class ProductsService {
       WHERE pav.product_id = ?
       ORDER BY pa.display_order ASC
       `,
-      [product.id],
-      ),
+          [product.id],
+        ),
 
-      this.dataSource.query(
-      `
+        this.dataSource.query(
+          `
       SELECT 
         pv.variant_id, 
         pv.variant_name, 
@@ -126,28 +127,29 @@ export class ProductsService {
       LEFT JOIN variant_inventory vi ON pv.variant_id = vi.variant_id
       WHERE pv.product_id = ? AND pv.variant_status = 'ACTIVE'
       `,
-      [product.id]),
+          [product.id],
+        ),
 
-      this.dataSource.query(
-        `SELECT image_id, image_url, is_thumbnail, sort_order
+        this.dataSource.query(
+          `SELECT image_id, image_url, is_thumbnail, sort_order
          FROM product_images WHERE product_id=?
          ORDER BY is_thumbnail DESC, sort_order, image_id`,
-        [product.id],
-      ),
+          [product.id],
+        ),
 
-      this.dataSource.query(
-        `SELECT pr.promotion_code,pr.promotion_name,pr.discount_type,
+        this.dataSource.query(
+          `SELECT pr.promotion_code,pr.promotion_name,pr.discount_type,
                 pr.discount_value,pr.max_discount_amount,pr.end_at
          FROM promotions pr
          JOIN promotion_products pp ON pp.promotion_id=pr.promotion_id
          WHERE pp.product_id=? AND pr.promotion_status='ACTIVE'
            AND NOW() BETWEEN pr.start_at AND pr.end_at
          ORDER BY pr.discount_value DESC`,
-        [product.id],
-      ),
+          [product.id],
+        ),
 
-      this.getReviews(product.id),
-    ]);
+        this.getReviews(product.id),
+      ]);
 
     product.specifications = specifications;
     product.variants = variants;
@@ -239,7 +241,15 @@ export class ProductsService {
         (product_id, user_id, order_id, variant_id, rating, review_title, review_content, is_verified_purchase, review_status)
       VALUES (?, ?, ?, ?, ?, ?, ?, TRUE, 'PENDING')
       `,
-      [productId, userId, orderId, purchased[0].variant_id, rating, title, content],
+      [
+        productId,
+        userId,
+        orderId,
+        purchased[0].variant_id,
+        rating,
+        title,
+        content,
+      ],
     );
 
     return { insertId: result.insertId };

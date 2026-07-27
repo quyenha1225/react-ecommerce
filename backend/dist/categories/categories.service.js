@@ -43,11 +43,7 @@ let CategoriesService = class CategoriesService {
                 .replace(/(\s+)/g, '-')
                 .replace(/^-+|-+$/g, '');
         const result = await this.dataSource.query(`INSERT INTO categories (category_name, category_slug, parent_category_id) 
-       VALUES (?, ?, ?)`, [
-            dto.category_name,
-            slug,
-            dto.parent_category_id || null,
-        ]);
+       VALUES (?, ?, ?)`, [dto.category_name, slug, dto.parent_category_id || null]);
         return {
             success: true,
             message: 'Tạo danh mục thành công',

@@ -8,6 +8,10 @@ export class AiController {
 
   @Post('search')
   search(@Body() body: AiSearchDto, @Req() req: any) {
-    return this.aiService.search(body.query.trim(), Boolean(body.useAI), req.ip || 'anonymous');
+    return this.aiService.search(
+      body.query.trim(),
+      Boolean(body.useAI),
+      req.ip || 'anonymous',
+    );
   }
 }
