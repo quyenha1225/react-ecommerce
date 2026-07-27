@@ -4,7 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom";
 import DealImage from "../nillkin-case.webp";
 import { useEffect, useMemo, useState } from "react";
-
+import { addToCart } from "../utils/cartStorage";
+import Product from "../products/Product";
 const API_URL =
   process.env.REACT_APP_API_URL || "http://localhost:3001/api";
 
@@ -36,6 +37,7 @@ const categoryHighlights = [
 ];
 
 const featuredPageSize = 6;
+
 
 function normalizeProduct(item) {
   const imageUrl =
@@ -102,6 +104,23 @@ function formatPrice(value) {
   return Number(value || 0).toLocaleString("vi-VN");
 }
 
+function handleAddToCart(product) {
+  addToCart({
+    id: product.id,
+    name: product.name,
+    brand: product.brand || product.category,
+    price: product.price,
+    oldPrice:
+      product.percentOff > 0
+        ? Math.round(
+            product.price /
+              (1 - product.percentOff / 100)
+          )
+        : product.price,
+    quantity: 1,
+    image: product.imageUrl,
+  });
+}
 function Landing() {
   const [products, setProducts] = useState([]);
   const [featuredPage, setFeaturedPage] = useState(1);
@@ -276,7 +295,7 @@ function Landing() {
                           {product.percentOff > 0
                             ? `-${product.percentOff}%`
                             : "Nổi bật"}
-                        </span>
+                        </span> 
 
                         <img
                           src={product.imageUrl}
@@ -331,6 +350,7 @@ function Landing() {
                           <button
                             type="button"
                             className="btn home-add-cart-btn"
+                            onClick={() => handleAddToCart(product)}
                           >
                             <FontAwesomeIcon
                               icon={[

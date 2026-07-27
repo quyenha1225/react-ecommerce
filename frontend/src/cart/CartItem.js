@@ -6,9 +6,8 @@ import {
 } from "../utils/cartStorage";
 
 function formatPrice(price) {
-  return price.toLocaleString("vi-VN") + "đ";
+  return Number(price || 0).toLocaleString("vi-VN") + "đ";
 }
-
 function CartItem({ product }) {
   return (
     <div className="cart-item">

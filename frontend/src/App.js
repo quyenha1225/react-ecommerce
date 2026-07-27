@@ -11,14 +11,15 @@ function App() {
   return (
     <Template>
       <Routes>
-        <Route path="/" element={<Landing />} />
+        <Route path="/" element={<Landing />} />\
+        
 
         <Route path="/login" element={<Login />} />
 
         <Route path="/cart" element={<Cart />} />
 
         <Route path="/products" element={<ProductList />} />
-
+    
         <Route
           path="/category/:categoryName"
           element={<ProductList />}
@@ -36,13 +37,14 @@ function App() {
           element={
             <div className="container mt-5 text-center">
               <h1 className="text-danger">
-                404 - Không tìm thấy trang
+                404?? - Không tìm thấy trang
               </h1>
               <p>Vui lòng quay lại trang chủ.</p>
             </div>
           }
         />
       </Routes>
+       
     </Template>
   );
 }

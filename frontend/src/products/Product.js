@@ -28,6 +28,7 @@ function Product({ product = {}, percentOff }) {
     : price;
 
   function handleAddToCart() {
+    
     addToCart({
       id: product.id,
       name: productName,

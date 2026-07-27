@@ -15,7 +15,40 @@ const categories = [
   { name: "Màn hình", slug: "man-hinh" },
 ];
 
-const brands = ["Apple", "Samsung", "Asus", "Dell", "Lenovo", "Xiaomi"];
+const brandByCategory = {
+  laptop: [
+    "Asus",
+    "Dell",
+    "Lenovo",
+    "HP",
+    "Acer",
+    "MSI",
+  ],
+
+  "dien-thoai": [
+    "Apple",
+    "Samsung",
+    "Xiaomi",
+    "OPPO",
+    "Vivo",
+  ],
+
+  "phu-kien": [
+    "Logitech",
+    "Anker",
+    "Ugreen",
+    "Nillkin",
+  ],
+
+  all: [
+    "Apple",
+    "Samsung",
+    "Asus",
+    "Dell",
+    "Lenovo",
+    "Xiaomi",
+  ]
+};
 
 const productCatalog = [
   {
@@ -71,7 +104,7 @@ const productCatalog = [
     rating: 4.7,
     sold: "310",
   },
-  { 
+  {
     id: 7,
     name: "Chuột không dây Silent",
     category: "Phụ kiện",
@@ -97,7 +130,7 @@ const productCatalog = [
     rating: 4.6,
     sold: "1.6k",
   },
-  { 
+  {
     id: 10,
     name: "Laptop Ultrabook Slim 14",
     category: "Laptop",
@@ -107,7 +140,7 @@ const productCatalog = [
   },
 ];
 
-function FilterMenuLeft() {
+function FilterMenuLeft({ currentBrands }) {
   return (
     <ul className="list-group list-group-flush rounded">
       <li className="list-group-item d-none d-lg-block">
@@ -130,7 +163,7 @@ function FilterMenuLeft() {
         <h5 className="mt-1 mb-1">Thương hiệu</h5>
 
         <div className="d-flex flex-column">
-          {brands.map((brand) => (
+          {currentBrands.map((brand) => (
             <div key={brand} className="form-check">
               <input className="form-check-input" type="checkbox" />
               <label className="form-check-label">{brand}</label>
@@ -174,22 +207,52 @@ function ProductList() {
   const [viewType, setViewType] = useState({ grid: true });
   const [showFilter, setShowFilter] = useState(false);
 
-  const [selectedCategory, setSelectedCategory] = useState("Danh mục");
+  const [selectedCategory, setSelectedCategory] = useState(null);
 
-  const [selectedBrand, setSelectedBrand] = useState("Thương hiệu");
+  const [selectedBrands, setSelectedBrands] = useState([]);
 
-  const [selectedPrice, setSelectedPrice] = useState("Khoảng giá");
-
+  const [selectedPrice, setSelectedPrice] = useState(null);
+  const [searchText, setSearchText] = useState("");
   const { categoryName } = useParams();
-
+  const isAllProducts = !categoryName;
   const currentCategory = categories.find((item) => item.slug === categoryName);
-
+  const currentBrands =
+    brandByCategory[categoryName] ??
+    brandByCategory.all;
   function changeViewType() {
     setViewType({
       grid: !viewType.grid,
     });
   }
+  function toggleBrand(brand) {
 
+    if (selectedBrands.includes(brand)) {
+
+      setSelectedBrands(
+        selectedBrands.filter(item => item !== brand)
+      );
+
+    } else {
+
+      setSelectedBrands([
+        ...selectedBrands,
+        brand
+      ]);
+
+    }
+
+  }
+  const filteredProducts = productCatalog.filter((product) => {
+
+    if (searchText.trim() === "") {
+      return true;
+    }
+
+    return product.name
+      .toLowerCase()
+      .includes(searchText.toLowerCase());
+
+  });
   return (
     <div className="container product-page py-4 px-xl-5">
       <ScrollToTopOnMount />
@@ -274,15 +337,17 @@ function ProductList() {
               data-bs-parent="#accordionFilter"
             >
               <div className="accordion-body p-0">
-                <FilterMenuLeft />
+                <FilterMenuLeft
+                  currentBrands={currentBrands}
+                />
               </div>
             </div>
           </div>
         </div>
       </div>
 
-        <div className="row mb-4 mt-lg-3 product-shop-layout">
-          <div className="col-12">
+      <div className="row mb-4 mt-lg-3 product-shop-layout">
+        <div className="col-12">
           <div className="d-flex flex-column h-100">
             <div className="d-flex justify-content-between align-items-center mb-3 product-list-heading">
               <div>
@@ -295,190 +360,235 @@ function ProductList() {
               </div>
             </div>
             <div className="filter-toolbar">
+
               <button
                 className="filter-chip active"
                 onClick={() => setShowFilter(!showFilter)}
               >
-                    <FontAwesomeIcon icon={["fas","sliders-h"]}/>
-                    Bộ lọc
-                </button>
+                <FontAwesomeIcon icon={["fas", "sliders-h"]} />
+                Bộ lọc
+              </button>
 
-                <button className="filter-chip">
+              <div className="selected-filter-area">
+
+                {(selectedCategory ||
+                  selectedBrands.length > 0 ||
+                  selectedPrice) && (
+                    <span className="selected-filter-title">
+                      Đã chọn:
+                    </span>
+                  )}
+
+                {selectedCategory && (
+                  <button className="selected-chip">
                     {selectedCategory}
-                    <FontAwesomeIcon icon={["fas","angle-down"]}/>
-                </button>
+                    <FontAwesomeIcon
+                      icon={["fas", "times"]}
+                      onClick={() => setSelectedCategory(null)}
+                    />
+                  </button>
+                )}
 
-                <button className="filter-chip">
-                    {selectedBrand}
-                    <FontAwesomeIcon icon={["fas","angle-down"]}/>
-                </button>
+                {selectedBrands.map((brand) => (
+                  <button
+                    key={brand}
+                    className="selected-chip"
+                  >
+                    {brand}
 
-                <button className="filter-chip">
+                    <FontAwesomeIcon
+                      icon={["fas", "times"]}
+                      onClick={() =>
+                        setSelectedBrands(
+                          selectedBrands.filter(
+                            item => item !== brand
+                          )
+                        )
+                      }
+                    />
+                  </button>
+                ))}
+
+                {selectedPrice && (
+                  <button className="selected-chip">
                     {selectedPrice}
-                    <FontAwesomeIcon icon={["fas","angle-down"]}/>
-                </button>
+
+                    <FontAwesomeIcon
+                      icon={["fas", "times"]}
+                      onClick={() => setSelectedPrice(null)}
+                    />
+                  </button>
+                )}
+
+              </div>
 
             </div>
 
             {showFilter && (
 
-            <div className="filter-popup">
+              <div className="filter-popup">
 
                 <div className="filter-box">
+                  {isAllProducts && (
+                    <>
+                      <h5 className="mb-3">Danh mục</h5>
 
-                    <h5 className="mb-3">Danh mục</h5>
-
-                    <div className="filter-option-wrap">
+                      <div className="filter-option-wrap">
 
                         <button
-                            className="filter-option"
-                            onClick={()=>setSelectedCategory("Điện thoại")}
+                          className="filter-option"
+                          onClick={() => setSelectedCategory("Điện thoại")}
                         >
-                            Điện thoại
+                          Điện thoại
                         </button>
 
                         <button
-                            className="filter-option"
-                            onClick={()=>setSelectedCategory("Laptop")}
+                          className="filter-option"
+                          onClick={() => setSelectedCategory("Laptop")}
                         >
-                            Laptop
+                          Laptop
                         </button>
 
                         <button
-                            className="filter-option"
-                            onClick={()=>setSelectedCategory("Phụ kiện")}
+                          className="filter-option"
+                          onClick={() => setSelectedCategory("Phụ kiện")}
                         >
-                            Phụ kiện
+                          Phụ kiện
                         </button>
 
                         <button
-                            className="filter-option"
-                            onClick={()=>setSelectedCategory("Linh kiện PC")}
+                          className="filter-option"
+                          onClick={() => setSelectedCategory("Linh kiện PC")}
                         >
-                            Linh kiện PC
+                          Linh kiện PC
                         </button>
 
-                    </div>
+                      </div>
 
-                    <hr/>
+                      <hr />
+                    </>
+                  )}
 
-                    <h5 className="mb-3">Thương hiệu</h5>
+                  <h5 className="mb-3">Thương hiệu</h5>
 
-                    <div className="filter-option-wrap">
+                  <div className="filter-option-wrap">
 
-                        {brands.map((brand)=>(
-                            <button
-                                key={brand}
-                                className="filter-option"
-                                onClick={()=>setSelectedBrand(brand)}
-                            >
-                                {brand}
-                            </button>
-                        ))}
+                    {currentBrands.map((brand) => (
+                      <button
+                        key={brand}
+                        className="filter-option"
+                        onClick={() => toggleBrand(brand)}
+                      >
+                        {brand}
+                      </button>
+                    ))}
 
-                    </div>
+                  </div>
 
-                    <hr/>
+                  <hr />
 
-                    <h5 className="mb-3">Khoảng giá</h5>
+                  <h5 className="mb-3">Khoảng giá</h5>
 
-                    <div className="filter-option-wrap">
+                  <div className="filter-option-wrap">
 
-                        <button
-                            className="filter-option"
-                            onClick={()=>setSelectedPrice("Dưới 5 triệu")}
-                        >
-                            Dưới 5 triệu
-                        </button>
+                    <button
+                      className="filter-option"
+                      onClick={() => setSelectedPrice("Dưới 5 triệu")}
+                    >
+                      Dưới 5 triệu
+                    </button>
 
-                        <button
-                            className="filter-option"
-                            onClick={()=>setSelectedPrice("5 - 10 triệu")}
-                        >
-                            5 - 10 triệu
-                        </button>
+                    <button
+                      className="filter-option"
+                      onClick={() => setSelectedPrice("5 - 10 triệu")}
+                    >
+                      5 - 10 triệu
+                    </button>
 
-                        <button
-                            className="filter-option"
-                            onClick={()=>setSelectedPrice("10 - 20 triệu")}
-                        >
-                            10 - 20 triệu
-                        </button>
+                    <button
+                      className="filter-option"
+                      onClick={() => setSelectedPrice("10 - 20 triệu")}
+                    >
+                      10 - 20 triệu
+                    </button>
 
-                        <button
-                            className="filter-option"
-                            onClick={()=>setSelectedPrice("Trên 20 triệu")}
-                        >
-                            Trên 20 triệu
-                        </button>
+                    <button
+                      className="filter-option"
+                      onClick={() => setSelectedPrice("Trên 20 triệu")}
+                    >
+                      Trên 20 triệu
+                    </button>
 
-                    </div>
+                  </div>
 
-                    <div className="d-flex justify-content-end mt-4">
+                  <div className="d-flex justify-content-end mt-4">
 
-                        <button
-                            className="btn btn-light me-2"
-                            onClick={()=>{
-                                setSelectedCategory("Danh mục");
-                                setSelectedBrand("Thương hiệu");
-                                setSelectedPrice("Khoảng giá");
-                            }}
-                        >
-                            Xóa bộ lọc
-                        </button>
+                    <button
+                      className="btn btn-light me-2"
+                      onClick={() => {
+                        setSelectedCategory(null);
+                        setSelectedBrands([]);
+                        setSelectedPrice(null);
+                      }}
+                    >
+                      Xóa bộ lọc
+                    </button>
 
-                        <button
-                            className="btn btn-danger"
-                            onClick={()=>setShowFilter(false)}
-                        >
-                            Áp dụng
-                        </button>
-
-                     </div>
+                    <button
+                      className="btn btn-danger"
+                      onClick={() => setShowFilter(false)}
+                    >
+                      Áp dụng
+                    </button>
 
                   </div>
 
                 </div>
 
-                )}
+              </div>
 
-                <div className="search-toolbar">
+            )}
 
-                    <div className="input-group">
+            <div className="search-toolbar">
 
-                        <input
-                            className="form-control"
-                            placeholder="Tìm sản phẩm..."
-                        />
+              <div className="input-group">
 
-                        <button className="btn btn-dark">
+                <input
+                  className="form-control"
+                  placeholder="Tìm sản phẩm..."
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
+                />
 
-                            <FontAwesomeIcon icon={["fas","search"]}/>
+                <button className="btn btn-dark">
 
-                        </button>
+                  <FontAwesomeIcon icon={["fas", "search"]} />
 
-                    </div>
+                </button>
 
-                    <button
-                        className="btn btn-outline-dark ms-3"
-                        onClick={changeViewType}
-                    >
+              </div>
 
-                        <FontAwesomeIcon
-                            icon={["fas",viewType.grid ? "th-list":"th-large"]}
-                        />
+              <button
+                className="btn btn-outline-dark ms-3"
+                onClick={changeViewType}
+              >
 
-                    </button>
+                <FontAwesomeIcon
+                  icon={["fas", viewType.grid ? "th-list" : "th-large"]}
+                />
 
-                </div>
+              </button>
+
+            </div>
             <div
               className={
                 "row row-cols-1 row-cols-md-2 row-cols-lg-2 g-3 mb-4 flex-shrink-0 " +
                 (viewType.grid ? "row-cols-xl-3" : "row-cols-xl-2")
               }
             >
-              {productCatalog.map((product, i) => {
+              {filteredProducts.map((product, i) => {
                 if (viewType.grid) {
+
                   return (
                     <Product
                       key={product.name}
@@ -538,7 +648,7 @@ function ProductList() {
               </nav>
             </div>
           </div>
-            
+
         </div>
       </div>
     </div>
