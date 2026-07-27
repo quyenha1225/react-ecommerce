@@ -1,4 +1,4 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 
 const AuthContext = createContext(null);
 const API = process.env.REACT_APP_API_URL || "http://localhost:3001/api";
@@ -11,10 +11,34 @@ export function AuthProvider({ children }) {
       return null;
     }
   });
+  const [authReady, setAuthReady] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+    fetch(`${API}/auth/me`, { credentials: "include" })
+      .then(async response => {
+        if (!response.ok) throw new Error("No active session");
+        return response.json();
+      })
+      .then(data => {
+        if (!active) return;
+        const restored = { success: true, user: data.user };
+        localStorage.setItem("eshop_session", JSON.stringify(restored));
+        setSession(restored);
+      })
+      .catch(() => {
+        if (!active) return;
+        localStorage.removeItem("eshop_session");
+        setSession(null);
+      })
+      .finally(() => { if (active) setAuthReady(true); });
+    return () => { active = false; };
+  }, []);
 
   const request = async (path, payload) => {
     const response = await fetch(`${API}${path}`, {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
     });
@@ -59,6 +83,7 @@ export function AuthProvider({ children }) {
 
   // Hàm xử lý Đăng xuất triệt để
   const logout = () => {
+    fetch(`${API}/auth/logout`, { method: "POST", credentials: "include" }).catch(() => {});
     localStorage.removeItem("eshop_session");
     localStorage.removeItem("customer-info");
     localStorage.removeItem("payment-method");
@@ -71,6 +96,7 @@ export function AuthProvider({ children }) {
   const value = useMemo(
     () => ({
       session,
+      authReady,
       login: (email, password) => request("/auth/login", { email, password }),
       register: ({ confirm, confirmPassword, confirm_password, ...payload }) =>
         request("/auth/register", payload),
@@ -83,9 +109,9 @@ export function AuthProvider({ children }) {
       api: async (path, options = {}) => {
         const response = await fetch(`${API}${path}`, {
           ...options,
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session?.token || ""}`,
             ...(options.headers || {}),
           },
         });
@@ -102,7 +128,7 @@ export function AuthProvider({ children }) {
         return data;
       },
     }),
-    [session],
+    [session, authReady],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

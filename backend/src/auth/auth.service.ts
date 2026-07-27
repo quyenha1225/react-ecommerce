@@ -2,7 +2,6 @@ import {
   Injectable,
   BadRequestException,
   UnauthorizedException,
-  OnModuleInit,
 } from '@nestjs/common';
 import { DataSource } from 'typeorm';
 import { JwtService } from '@nestjs/jwt';
@@ -10,7 +9,7 @@ import * as bcrypt from 'bcrypt';
 import { CreateUserDto } from '../users/dto/create-user.dto';
 
 @Injectable()
-export class AuthService implements OnModuleInit {
+export class AuthService {
   private readonly attempts = new Map<
     string,
     { count: number; resetAt: number }
@@ -20,49 +19,6 @@ export class AuthService implements OnModuleInit {
     private jwtService: JwtService,
     private dataSource: DataSource,
   ) {}
-
-  // TỰ ĐỘNG TẠO/CẬP NHẬT TÀI KHOẢN ADMIN KHI BACKEND KHỞI ĐỘNG
-  async onModuleInit() {
-    try {
-      const adminEmail = 'admin1@gmail.com';
-      const adminPass = 'Admin1234';
-      const hashedPassword = await bcrypt.hash(adminPass, 10);
-
-      // Lấy role_id của ADMIN
-      const adminRoles = await this.dataSource.query(
-        `SELECT role_id FROM roles WHERE role_code = 'ADMIN' LIMIT 1`,
-      );
-      if (!adminRoles[0]) return;
-
-      const roleId = adminRoles[0].role_id;
-
-      // Kiểm tra tài khoản đã tồn tại chưa
-      const existingUsers = await this.dataSource.query(
-        `SELECT user_id FROM users WHERE user_email = ? LIMIT 1`,
-        [adminEmail],
-      );
-
-      if (existingUsers[0]) {
-        // Nếu đã có -> Đè lại mật khẩu hash chuẩn + cấp quyền ADMIN
-        await this.dataSource.query(
-          `UPDATE users SET password_hash = ?, role_id = ?, account_status = 'ACTIVE' WHERE user_email = ?`,
-          [hashedPassword, roleId, adminEmail],
-        );
-      } else {
-        // Nếu chưa có -> Tạo mới hoàn toàn với SĐT riêng không trùng
-        await this.dataSource.query(
-          `INSERT INTO users (role_id, user_full_name, user_email, user_phone, password_hash, account_status)
-           VALUES (?, 'Administrator', ?, '0999999999', ?, 'ACTIVE')`,
-          [roleId, adminEmail, hashedPassword],
-        );
-      }
-      console.log(
-        '✅ Auto-seed Admin thành công: admin1@gmail.com / Admin1234',
-      );
-    } catch (error) {
-      console.error('❌ Lỗi Auto-seed Admin:', (error as any).message);
-    }
-  }
 
   async register(createUserDto: CreateUserDto) {
     // Hỗ trợ map linh hoạt cả 2 kiểu tên thuộc tính từ DTO

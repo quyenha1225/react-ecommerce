@@ -1,4 +1,5 @@
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useState } from "react";
 import {
   increaseQuantity,
   decreaseQuantity,
@@ -12,6 +13,7 @@ function formatPrice(price) {
 
 function CartItem({ product }) {
   const isSelected = product.selected !== false;
+  const [imageFailed, setImageFailed] = useState(false);
 
   return (
     <div className="cart-item">
@@ -25,8 +27,8 @@ function CartItem({ product }) {
       </div>
 
       {/* Ảnh */}
-      <div className="cart-image">
-        <img src={product.image} alt={product.name} />
+      <div className={`cart-image ${imageFailed || !product.image ? "no-image" : ""}`}>
+        {imageFailed || !product.image ? <FontAwesomeIcon icon={["fas","image"]}/> : <img src={product.image} alt={product.name} onError={() => setImageFailed(true)} />}
       </div>
 
       {/* Thông tin */}
