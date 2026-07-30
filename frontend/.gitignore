@@ -1,0 +1,15 @@
+node_modules/
+backend/node_modules/
+fontend/node_modules/
+frontend/node_modules/
+
+backend/dist/
+fontend/build/
+frontend/build/
+
+.env
+backend/.env
+fontend/.env
+frontend/.env
+
+*.log
