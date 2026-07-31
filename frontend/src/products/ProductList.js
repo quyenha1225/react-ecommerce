@@ -1,7 +1,7 @@
 import { Link, useParams } from "react-router-dom";
 import Product from "./Product";
 import ProductH from "./ProductH";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import ScrollToTopOnMount from "../template/ScrollToTopOnMount";
 
@@ -147,7 +147,7 @@ function ProductList() {
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
-  // State giá nhập thủ công (Khởi tạo mở tối đa từ 0 đến 500 triệu)
+  // State giá nhập thủ công
   const [minPrice, setMinPrice] = useState("0");
   const [maxPrice, setMaxPrice] = useState("500000000");
   const [appliedPriceRange, setAppliedPriceRange] = useState({
@@ -155,12 +155,26 @@ function ProductList() {
     max: Infinity,
   });
 
-  // State dữ liệu API
+  // State dữ liệu API và phân trang backend
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const limit = 12;
 
   const { categoryName } = useParams();
+
+  // Reset về trang 1 khi thay đổi bộ lọc hoặc danh mục
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [
+    categoryName,
+    selectedCategory,
+    selectedBrand,
+    appliedPriceRange,
+    searchTerm,
+  ]);
 
   // 1. TẢI DANH MỤC TỪ BACKEND
   useEffect(() => {
@@ -180,38 +194,47 @@ function ProductList() {
       .catch((err) => console.error("Lỗi tải danh mục:", err));
   }, []);
 
-  // 2. TẢI DỮ LIỆU SẢN PHẨM TỪ BACKEND
+  const currentCategory = categories.find(
+    (item) =>
+      String(item.slug).toLowerCase() === String(categoryName).toLowerCase(),
+  );
+
+  // 2. TẢI DỮ LIỆU SẢN PHẨM CÓ GỬI KÈM THAM SỐ LỌC LÊN BACKEND
   useEffect(() => {
     const controller = new AbortController();
     setLoading(true);
 
-    fetch(
-      `${process.env.REACT_APP_API_URL || "http://localhost:3001/api"}/products`,
-      { signal: controller.signal },
-    )
+    const activeCat = selectedCategory || currentCategory;
+    const catSlug = activeCat
+      ? activeCat.slug || activeCat.category_slug
+      : "all";
+    const brandParam = selectedBrand !== "Thương hiệu" ? selectedBrand : "";
+    const minParam = appliedPriceRange.min > 0 ? appliedPriceRange.min : "";
+    const maxParam =
+      appliedPriceRange.max !== Infinity ? appliedPriceRange.max : "";
+
+    let url = `${process.env.REACT_APP_API_URL || "http://localhost:3001/api"}/products?page=${currentPage}&limit=${limit}`;
+
+    if (catSlug && catSlug !== "all")
+      url += `&category=${encodeURIComponent(catSlug)}`;
+    if (brandParam) url += `&brand=${encodeURIComponent(brandParam)}`;
+    if (minParam !== "") url += `&minPrice=${minParam}`;
+    if (maxParam !== "") url += `&maxPrice=${maxParam}`;
+    if (searchTerm.trim() !== "")
+      url += `&search=${encodeURIComponent(searchTerm.trim())}`;
+
+    fetch(url, { signal: controller.signal })
       .then((response) => {
         if (!response.ok) throw new Error("Không tải được sản phẩm từ backend");
         return response.json();
       })
       .then((data) => {
         const rawList = Array.isArray(data) ? data : data.data || [];
+        if (data.pagination) {
+          setTotalPages(data.pagination.totalPages || 1);
+        }
 
         const mappedProducts = rawList.map((item) => {
-          const catId =
-            item.category_id ||
-            (item.category && item.category.category_id) ||
-            0;
-          const catSlug =
-            item.category_slug ||
-            (item.category && item.category.category_slug) ||
-            item.category ||
-            "";
-          const catName =
-            item.category_name ||
-            (item.category && item.category.category_name) ||
-            item.category ||
-            "";
-
           return {
             ...item,
             id: item.product_id || item.id,
@@ -219,9 +242,6 @@ function ProductList() {
             title: item.product_name || item.name || "Sản phẩm",
             price: Number(item.base_price || item.price || 0),
             brand: item.brand_name || item.brand || "",
-            categoryId: Number(catId),
-            categorySlug: String(catSlug).toLowerCase(),
-            categoryName: String(catName).toLowerCase(),
             img:
               item.image_url || item.img || "https://via.placeholder.com/300",
             rating: Number(item.average_rating || item.rating || 5),
@@ -238,64 +258,8 @@ function ProductList() {
       .finally(() => setLoading(false));
 
     return () => controller.abort();
-  }, []);
-
-  // Xác định danh mục hiện tại dựa trên URL
-  const currentCategory = categories.find(
-    (item) =>
-      String(item.slug).toLowerCase() === String(categoryName).toLowerCase(),
-  );
-
-  // 3. ÁP DỤNG BỘ LỌC TỔNG HỢP (DANH MỤC + THƯƠNG HIỆU + KHOẢNG GIÁ + TÌM KIẾM)
-  const visibleProducts = useMemo(() => {
-    const activeCat = selectedCategory || currentCategory;
-
-    return products.filter((product) => {
-      // 1. Lọc Danh mục
-      if (activeCat && activeCat.slug !== "all") {
-        const activeSlug = String(
-          activeCat.slug || activeCat.category_slug || "",
-        ).toLowerCase();
-        const activeId = Number(activeCat.category_id || 0);
-
-        const matchSlug = product.categorySlug === activeSlug;
-        const matchId = activeId > 0 && product.categoryId === activeId;
-
-        if (!matchSlug && !matchId) {
-          return false;
-        }
-      }
-
-      // 2. Lọc Thương hiệu
-      if (selectedBrand !== "Thương hiệu") {
-        if (
-          !product.brand ||
-          String(product.brand).toLowerCase() !==
-            String(selectedBrand).toLowerCase()
-        ) {
-          return false;
-        }
-      }
-
-      // 3. Lọc Khoảng giá
-      if (
-        product.price < appliedPriceRange.min ||
-        product.price > appliedPriceRange.max
-      ) {
-        return false;
-      }
-
-      // 4. Lọc Tên sản phẩm (Search)
-      if (searchTerm.trim() !== "") {
-        const query = searchTerm.toLowerCase();
-        const productName = (product.name || "").toLowerCase();
-        if (!productName.includes(query)) return false;
-      }
-
-      return true;
-    });
   }, [
-    products,
+    currentPage,
     selectedCategory,
     currentCategory,
     selectedBrand,
@@ -688,7 +652,7 @@ function ProductList() {
                 </div>
               )}
 
-              {!loading && !error && visibleProducts.length === 0 && (
+              {!loading && !error && products.length === 0 && (
                 <div className="col-12 py-5 text-center text-muted">
                   Không tìm thấy sản phẩm nào phù hợp.
                 </div>
@@ -696,7 +660,7 @@ function ProductList() {
 
               {!loading &&
                 !error &&
-                visibleProducts.map((product, index) => {
+                products.map((product, index) => {
                   const itemKey = product.id || index;
                   return viewType.grid ? (
                     <Product
@@ -714,33 +678,55 @@ function ProductList() {
                 })}
             </div>
 
-            {/* Phân trang / Footer đếm số lượng */}
+            {/* Phân trang động */}
             <div className="d-flex align-items-center mt-auto">
               <span className="text-muted small d-none d-md-inline">
-                Hiển thị {visibleProducts.length} sản phẩm
+                Trang {currentPage} / {totalPages} (Hiển thị {products.length}{" "}
+                sản phẩm)
               </span>
 
               <nav aria-label="Page navigation" className="ms-auto">
                 <ul className="pagination my-0">
-                  <li className="page-item disabled">
-                    <a className="page-link" href="#!">
+                  <li
+                    className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
+                  >
+                    <button
+                      className="page-link"
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.max(prev - 1, 1))
+                      }
+                    >
                       Trước
-                    </a>
+                    </button>
                   </li>
-                  <li className="page-item active">
-                    <a className="page-link" href="#!">
-                      1
-                    </a>
-                  </li>
-                  <li className="page-item">
-                    <a className="page-link" href="#!">
-                      2
-                    </a>
-                  </li>
-                  <li className="page-item">
-                    <a className="page-link" href="#!">
+
+                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
+                    (num) => (
+                      <li
+                        key={num}
+                        className={`page-item ${currentPage === num ? "active" : ""}`}
+                      >
+                        <button
+                          className="page-link"
+                          onClick={() => setCurrentPage(num)}
+                        >
+                          {num}
+                        </button>
+                      </li>
+                    ),
+                  )}
+
+                  <li
+                    className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}
+                  >
+                    <button
+                      className="page-link"
+                      onClick={() =>
+                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+                      }
+                    >
                       Tiếp
-                    </a>
+                    </button>
                   </li>
                 </ul>
               </nav>

@@ -17,13 +17,54 @@ let ProductsService = class ProductsService {
     constructor(dataSource) {
         this.dataSource = dataSource;
     }
-    async findAll() {
-        const query = `
+    async findAll(query) {
+        const page = Number(query.page) > 0 ? Number(query.page) : 1;
+        const limit = Number(query.limit) > 0 ? Number(query.limit) : 12;
+        const offset = (page - 1) * limit;
+        let baseSql = `
+      FROM products p
+      LEFT JOIN categories c ON p.category_id = c.category_id
+      LEFT JOIN brands b ON p.brand_id = b.brand_id
+      LEFT JOIN product_images pi ON p.product_id = pi.product_id AND pi.is_thumbnail = TRUE
+      LEFT JOIN vw_best_selling_products bs ON bs.product_id = p.product_id
+      WHERE p.product_status = 'ACTIVE'
+    `;
+        const params = [];
+        if (query.category && query.category !== 'all') {
+            if (!isNaN(Number(query.category))) {
+                baseSql += ` AND (c.category_id = ? OR c.parent_category_id = ?)`;
+                params.push(Number(query.category), Number(query.category));
+            }
+            else {
+                baseSql += ` AND (c.category_slug = ? OR c.category_name LIKE ?)`;
+                params.push(query.category, `%${query.category}%`);
+            }
+        }
+        if (query.brand && query.brand !== 'Thương hiệu') {
+            baseSql += ` AND b.brand_name = ?`;
+            params.push(query.brand);
+        }
+        if (query.minPrice !== undefined && query.minPrice !== '') {
+            baseSql += ` AND p.base_price >= ?`;
+            params.push(Number(query.minPrice));
+        }
+        if (query.maxPrice !== undefined && query.maxPrice !== '' && query.maxPrice !== 'Infinity') {
+            baseSql += ` AND p.base_price <= ?`;
+            params.push(Number(query.maxPrice));
+        }
+        if (query.search && query.search.trim() !== '') {
+            baseSql += ` AND p.product_name LIKE ?`;
+            params.push(`%${query.search.trim()}%`);
+        }
+        const countQuery = `SELECT COUNT(DISTINCT p.product_id) AS total ${baseSql}`;
+        const countResult = await this.dataSource.query(countQuery, params);
+        const total = Number(countResult[0]?.total || 0);
+        const totalPages = Math.ceil(total / limit) || 1;
+        const dataQuery = `
       SELECT 
         p.product_id AS id, 
         p.product_id,
         p.product_slug AS slug,
-        p.product_slug AS category_slug,
         p.product_name AS name, 
         p.product_name,
         p.base_price AS price, 
@@ -40,16 +81,21 @@ let ProductsService = class ProductsService {
         p.average_rating AS rating,
         p.review_count AS reviewCount,
         COALESCE(bs.total_sold, 0) AS sold
-      FROM products p
-      LEFT JOIN categories c ON p.category_id = c.category_id
-      LEFT JOIN brands b ON p.brand_id = b.brand_id
-      LEFT JOIN product_images pi ON p.product_id = pi.product_id AND pi.is_thumbnail = TRUE
-      LEFT JOIN vw_best_selling_products bs ON bs.product_id = p.product_id
-      WHERE p.product_status = 'ACTIVE'
+      ${baseSql}
       ORDER BY p.product_id DESC
+      LIMIT ? OFFSET ?
     `;
-        const products = await this.dataSource.query(query);
-        return products;
+        const products = await this.dataSource.query(dataQuery, [...params, limit, offset]);
+        return {
+            success: true,
+            data: products,
+            pagination: {
+                total,
+                totalPages,
+                currentPage: page,
+                limit,
+            },
+        };
     }
     async findOne(identifier) {
         const numericId = Number(identifier);

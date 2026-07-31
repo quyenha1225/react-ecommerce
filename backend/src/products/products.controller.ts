@@ -4,6 +4,7 @@ import {
   Post,
   Body,
   Param,
+  Query,
   Req,
   UseGuards,
 } from '@nestjs/common';
@@ -15,8 +16,24 @@ export class ProductsController {
   constructor(private readonly productsService: ProductsService) {}
 
   @Get()
-  async getAllProducts() {
-    return await this.productsService.findAll();
+  async getAllProducts(
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('category') category?: string,
+    @Query('brand') brand?: string,
+    @Query('minPrice') minPrice?: string,
+    @Query('maxPrice') maxPrice?: string,
+    @Query('search') search?: string,
+  ) {
+    return await this.productsService.findAll({
+      page,
+      limit,
+      category,
+      brand,
+      minPrice,
+      maxPrice,
+      search,
+    });
   }
 
   // Chi tiet 1 san pham - ProductDetail.jsx goi endpoint nay
@@ -44,8 +61,6 @@ export class ProductsController {
     return await this.productsService.getReviews(Number(id));
   }
 
-  // TODO: khi ban gan JWT auth guard vao du an, thay body.userId bang
-  // userId lay tu @Req() req.user.userId de tranh client tu xung la ai cung duoc.
   @Post(':id/reviews')
   @UseGuards(JwtAuthGuard)
   async createProductReview(
