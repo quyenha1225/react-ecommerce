@@ -10,7 +10,7 @@ import { DataSource } from 'typeorm';
 export class PaymentsService {
   constructor(private dataSource: DataSource) {}
 
-  // 1. TẠO QR SEPAY DỰA TRÊN ORDER_ID
+  // 1. TẠO QR SEPAY DỰA TRÊN ORDER_ID (ĐÃ FIX ĐÚNG THÔNG TIN VIETINBANK & CÚ PHÁP SEVQR)
   async getSePayQrUrl(orderId: number, userId: number) {
     const orders = await this.dataSource.query(
       `SELECT o.order_id, o.order_code, 
@@ -29,11 +29,14 @@ export class PaymentsService {
       );
     }
 
-    const bankAccount = process.env.SEPAY_BANK_ACCOUNT || '101886339075';
-    const bankName = process.env.SEPAY_BANK_NAME || 'VietinBank';
+    // Cố định thông tin VietinBank và số tài khoản chính xác của bạn
+    const bankAccount = '101886339075';
+    const bankName = 'VietinBank';
     const amount = Math.round(Number(order.total_amount) || 0);
 
     const orderCode = order.order_code || `ESH${order.order_id}`;
+
+    // BẮT BUỘC PHẢI CÓ CHỮ "SEVQR" Ở ĐẦU ĐỂ VIETINBANK VÀ SEPAY NHẬN DIỆN WEBHOOK
     const description = `SEVQR ${orderCode}`;
 
     const qrUrl = `https://qr.sepay.vn/img?bank=${bankName}&acc=${bankAccount}&template=compact&amount=${amount}&des=${encodeURIComponent(description)}`;
@@ -73,7 +76,7 @@ export class PaymentsService {
     if (!content)
       return { success: false, message: 'Nội dung chuyển khoản rỗng' };
 
-    // Trích xuất chuỗi số đằng sau chữ ESH (Ví dụ: ESH1785076777742 -> lấy 1785076777742)
+    // Trích xuất chuỗi số đằng sau chữ ESH (Ví dụ: SEVQR ESH1785076777742 -> bắt được ESH và số phía sau)
     const match = content.match(/ESH(\d+)/i);
     const orderCodeFromContent = match ? `ESH${match[1]}` : null;
 
@@ -135,7 +138,7 @@ export class PaymentsService {
     return { success: false, message: 'Không tìm thấy đơn hàng cần cập nhật' };
   }
 
-  // 4. MOCK THANH TOÁN THỦ CÔNG
+  // 4. MOCK THANH TOÁN THỦ CÔNG (DỰ PHÒNG)
   async mockSuccess(orderId: number, userId: number) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
