@@ -10,11 +10,12 @@ import AdminDashboard from "./admin/AdminDashboard";
 import Contact from "./contact/Contact";
 import SearchResults from "./search/SearchResults";
 import Account from "./account/Account";
-
+import Staff from "./staff/Staff";
 function App() {
   return (
     <Routes>
       <Route path="/admin/*" element={<AdminDashboard />} />
+      <Route path="/staff" element={<Staff />} />
       <Route path="/guest" element={<Template guestMode><Landing /></Template>} />
       <Route path="*" element={<Template><Routes>
         <Route path="/" element={<Landing />} />
