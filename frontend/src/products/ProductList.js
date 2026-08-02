@@ -1,9 +1,13 @@
+import { useEffect, useMemo, useState } from "react";
 import { Link, useParams } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+
 import Product from "./Product";
 import ProductH from "./ProductH";
-import { useEffect, useState } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import ScrollToTopOnMount from "../template/ScrollToTopOnMount";
+
+const API_URL =
+  process.env.REACT_APP_API_URL || "http://localhost:3001/api";
 
 const defaultCategories = [
   { name: "Tất cả sản phẩm", slug: "all" },
@@ -30,12 +34,40 @@ const brands = [
 ];
 
 const priceRanges = [
-  { label: "Tất cả mức giá", min: 0, max: Infinity },
-  { label: "Dưới 5 triệu", min: 0, max: 5000000 },
-  { label: "5 - 10 triệu", min: 5000000, max: 10000000 },
-  { label: "10 - 20 triệu", min: 10000000, max: 20000000 },
-  { label: "Trên 20 triệu", min: 20000000, max: Infinity },
+  {
+    label: "Tất cả mức giá",
+    min: 0,
+    max: Infinity,
+  },
+  {
+    label: "Dưới 5 triệu",
+    min: 0,
+    max: 5000000,
+  },
+  {
+    label: "5 - 10 triệu",
+    min: 5000000,
+    max: 10000000,
+  },
+  {
+    label: "10 - 20 triệu",
+    min: 10000000,
+    max: 20000000,
+  },
+  {
+    label: "Trên 20 triệu",
+    min: 20000000,
+    max: Infinity,
+  },
 ];
+
+function getCategorySlug(category) {
+  return category?.slug || category?.category_slug || "";
+}
+
+function getCategoryName(category) {
+  return category?.name || category?.category_name || "Danh mục";
+}
 
 function FilterMenuLeft({
   categoriesList,
@@ -51,6 +83,7 @@ function FilterMenuLeft({
     <ul className="list-group list-group-flush rounded">
       <li className="list-group-item d-none d-lg-block">
         <h5 className="mt-1 mb-2">Danh mục</h5>
+
         <div className="d-flex flex-wrap my-2">
           <Link
             to="/products"
@@ -58,31 +91,35 @@ function FilterMenuLeft({
           >
             Tất cả sản phẩm
           </Link>
-          {categoriesList.map((item) => (
-            <Link
-              key={item.slug || item.category_slug}
-              to={
-                item.slug === "all" || item.category_slug === "all"
-                  ? "/products"
-                  : `/category/${item.slug || item.category_slug}`
-              }
-              className="btn btn-sm btn-outline-dark rounded-pill me-2 mb-2"
-            >
-              {item.name || item.category_name}
-            </Link>
-          ))}
+
+          {categoriesList
+            .filter((category) => getCategorySlug(category) !== "all")
+            .map((category) => {
+              const slug = getCategorySlug(category);
+
+              return (
+                <Link
+                  key={slug}
+                  to={`/category/${slug}`}
+                  className="btn btn-sm btn-outline-dark rounded-pill me-2 mb-2"
+                >
+                  {getCategoryName(category)}
+                </Link>
+              );
+            })}
         </div>
       </li>
 
       <li className="list-group-item">
         <h5 className="mt-1 mb-1">Thương hiệu</h5>
+
         <div className="d-flex flex-column">
           {brands.map((brand) => (
             <div key={brand} className="form-check">
               <input
+                id={`brand-${brand}`}
                 className="form-check-input"
                 type="checkbox"
-                id={`brand-${brand}`}
                 checked={selectedBrand === brand}
                 onChange={() =>
                   setSelectedBrand(
@@ -90,7 +127,11 @@ function FilterMenuLeft({
                   )
                 }
               />
-              <label className="form-check-label" htmlFor={`brand-${brand}`}>
+
+              <label
+                className="form-check-label"
+                htmlFor={`brand-${brand}`}
+              >
                 {brand}
               </label>
             </div>
@@ -100,30 +141,39 @@ function FilterMenuLeft({
 
       <li className="list-group-item">
         <h5 className="mt-1 mb-2">Khoảng giá</h5>
-        <div className="d-grid d-block mb-3">
+
+        <div className="d-grid mb-3">
           <div className="form-floating mb-2">
             <input
               type="number"
+              min="0"
               className="form-control"
               placeholder="Min"
               value={minPrice}
-              onChange={(e) => setMinPrice(e.target.value)}
+              onChange={(event) => setMinPrice(event.target.value)}
             />
+
             <label>Giá thấp nhất (VNĐ)</label>
           </div>
 
           <div className="form-floating mb-2">
             <input
               type="number"
+              min="0"
               className="form-control"
               placeholder="Max"
               value={maxPrice}
-              onChange={(e) => setMaxPrice(e.target.value)}
+              onChange={(event) => setMaxPrice(event.target.value)}
             />
+
             <label>Giá cao nhất (VNĐ)</label>
           </div>
 
-          <button className="btn btn-dark" onClick={onApplyPrice}>
+          <button
+            type="button"
+            className="btn btn-dark"
+            onClick={onApplyPrice}
+          >
             Áp dụng
           </button>
         </div>
@@ -133,39 +183,111 @@ function FilterMenuLeft({
 }
 
 function ProductList() {
-  const [viewType, setViewType] = useState({ grid: true });
-  const [showFilter, setShowFilter] = useState(false);
+  const { categoryName } = useParams();
 
-  // State Danh mục (Động từ API + Fallback)
+  const [viewType, setViewType] = useState({
+    grid: true,
+  });
+
+  const [showFilter, setShowFilter] = useState(false);
   const [categories, setCategories] = useState(defaultCategories);
-  const [showCategoryDropdown, setShowCategoryDropdown] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(null);
 
-  // State bộ lọc
-  const [selectedBrand, setSelectedBrand] = useState("Thương hiệu");
-  const [selectedPriceLabel, setSelectedPriceLabel] = useState("Khoảng giá");
+  const [selectedBrand, setSelectedBrand] =
+    useState("Thương hiệu");
+
+  const [selectedPriceLabel, setSelectedPriceLabel] =
+    useState("Khoảng giá");
+
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
 
-  // State giá nhập thủ công
   const [minPrice, setMinPrice] = useState("0");
   const [maxPrice, setMaxPrice] = useState("500000000");
+
   const [appliedPriceRange, setAppliedPriceRange] = useState({
     min: 0,
     max: Infinity,
   });
 
-  // State dữ liệu API và phân trang backend
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
   const limit = 12;
+  const isProductPage = !categoryName;
 
-  const { categoryName } = useParams();
+  const currentCategory = useMemo(() => {
+    if (!categoryName) {
+      return null;
+    }
 
-  // Reset về trang 1 khi thay đổi bộ lọc hoặc danh mục
+    return (
+      categories.find(
+        (category) =>
+          getCategorySlug(category).toLowerCase() ===
+          String(categoryName).toLowerCase(),
+      ) || null
+    );
+  }, [categories, categoryName]);
+
+  const activeCategory = selectedCategory || currentCategory;
+
+  const pageTitle = activeCategory
+    ? getCategoryName(activeCategory)
+    : "Tất cả sản phẩm";
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadCategories() {
+      try {
+        const response = await fetch(`${API_URL}/categories`, {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          throw new Error("Không tải được danh mục");
+        }
+
+        const result = await response.json();
+
+        const categoryList = Array.isArray(result)
+          ? result
+          : result.data || [];
+
+        if (categoryList.length === 0) {
+          return;
+        }
+
+        const formattedCategories = categoryList.map((category) => ({
+          ...category,
+          name:
+            category.category_name ||
+            category.name ||
+            "Danh mục",
+          slug:
+            category.category_slug ||
+            category.slug ||
+            "",
+        }));
+
+        setCategories(formattedCategories);
+      } catch (requestError) {
+        if (requestError.name !== "AbortError") {
+          console.error("Lỗi tải danh mục:", requestError);
+        }
+      }
+    }
+
+    loadCategories();
+
+    return () => controller.abort();
+  }, []);
+
   useEffect(() => {
     setCurrentPage(1);
   }, [
@@ -176,103 +298,181 @@ function ProductList() {
     searchTerm,
   ]);
 
-  // 1. TẢI DANH MỤC TỪ BACKEND
-  useEffect(() => {
-    fetch("http://localhost:3001/api/categories")
-      .then((res) => res.json())
-      .then((data) => {
-        const catList = Array.isArray(data) ? data : data.data || [];
-        if (catList.length > 0) {
-          const formattedCats = catList.map((c) => ({
-            ...c,
-            name: c.category_name || c.name,
-            slug: c.category_slug || c.slug,
-          }));
-          setCategories(formattedCats);
-        }
-      })
-      .catch((err) => console.error("Lỗi tải danh mục:", err));
-  }, []);
-
-  const currentCategory = categories.find(
-    (item) =>
-      String(item.slug).toLowerCase() === String(categoryName).toLowerCase(),
-  );
-
-  // 2. TẢI DỮ LIỆU SẢN PHẨM CÓ GỬI KÈM THAM SỐ LỌC LÊN BACKEND
   useEffect(() => {
     const controller = new AbortController();
-    setLoading(true);
 
-    const activeCat = selectedCategory || currentCategory;
-    const catSlug = activeCat
-      ? activeCat.slug || activeCat.category_slug
-      : "all";
-    const brandParam = selectedBrand !== "Thương hiệu" ? selectedBrand : "";
-    const minParam = appliedPriceRange.min > 0 ? appliedPriceRange.min : "";
-    const maxParam =
-      appliedPriceRange.max !== Infinity ? appliedPriceRange.max : "";
+    async function loadProducts() {
+      setLoading(true);
+      setError("");
 
-    let url = `${process.env.REACT_APP_API_URL || "http://localhost:3001/api"}/products?page=${currentPage}&limit=${limit}`;
-
-    if (catSlug && catSlug !== "all")
-      url += `&category=${encodeURIComponent(catSlug)}`;
-    if (brandParam) url += `&brand=${encodeURIComponent(brandParam)}`;
-    if (minParam !== "") url += `&minPrice=${minParam}`;
-    if (maxParam !== "") url += `&maxPrice=${maxParam}`;
-    if (searchTerm.trim() !== "")
-      url += `&search=${encodeURIComponent(searchTerm.trim())}`;
-
-    fetch(url, { signal: controller.signal })
-      .then((response) => {
-        if (!response.ok) throw new Error("Không tải được sản phẩm từ backend");
-        return response.json();
-      })
-      .then((data) => {
-        const rawList = Array.isArray(data) ? data : data.data || [];
-        if (data.pagination) {
-          setTotalPages(data.pagination.totalPages || 1);
-        }
-
-        const mappedProducts = rawList.map((item) => {
-          return {
-            ...item,
-            id: item.product_id || item.id,
-            name: item.product_name || item.name || "Sản phẩm",
-            title: item.product_name || item.name || "Sản phẩm",
-            price: Number(item.base_price || item.price || 0),
-            brand: item.brand_name || item.brand || "",
-            img:
-              item.image_url || item.img || "https://via.placeholder.com/300",
-            rating: Number(item.average_rating || item.rating || 5),
-            percentOff: Number(item.percent_off || 0),
-            sold: Number(item.sold || 0),
-          };
+      try {
+        const params = new URLSearchParams({
+          page: String(currentPage),
+          limit: String(limit),
         });
 
+        const categorySlug = getCategorySlug(activeCategory);
+
+        if (categorySlug && categorySlug !== "all") {
+          params.set("category", categorySlug);
+        }
+
+        if (selectedBrand !== "Thương hiệu") {
+          params.set("brand", selectedBrand);
+        }
+
+        if (appliedPriceRange.min > 0) {
+          params.set(
+            "minPrice",
+            String(appliedPriceRange.min),
+          );
+        }
+
+        if (appliedPriceRange.max !== Infinity) {
+          params.set(
+            "maxPrice",
+            String(appliedPriceRange.max),
+          );
+        }
+
+        if (searchTerm.trim()) {
+          params.set("search", searchTerm.trim());
+        }
+
+        const response = await fetch(
+          `${API_URL}/products?${params.toString()}`,
+          {
+            signal: controller.signal,
+          },
+        );
+
+        if (!response.ok) {
+          throw new Error(
+            "Không tải được sản phẩm từ backend",
+          );
+        }
+
+        const result = await response.json();
+
+        const productList = Array.isArray(result)
+          ? result
+          : result.data || [];
+
+        const pagination = result.pagination || {};
+
+        const mappedProducts = productList.map((item) => ({
+          ...item,
+          id: item.product_id || item.id,
+          name:
+            item.product_name ||
+            item.name ||
+            "Sản phẩm",
+          title:
+            item.product_name ||
+            item.name ||
+            "Sản phẩm",
+          price: Number(
+            item.base_price ??
+              item.price ??
+              0,
+          ),
+          brand:
+            item.brand_name ||
+            item.brand ||
+            "",
+          img:
+            item.image_url ||
+            item.img ||
+            "https://via.placeholder.com/300",
+          rating: Number(
+            item.average_rating ??
+              item.rating ??
+              5,
+          ),
+          percentOff: Number(
+            item.percent_off ??
+              item.percentOff ??
+              0,
+          ),
+          sold: Number(item.sold || 0),
+        }));
+
         setProducts(mappedProducts);
-      })
-      .catch((err) => {
-        if (err.name !== "AbortError") setError(err.message);
-      })
-      .finally(() => setLoading(false));
+        setTotalPages(
+          Math.max(
+            Number(pagination.totalPages || 1),
+            1,
+          ),
+        );
+      } catch (requestError) {
+        if (requestError.name !== "AbortError") {
+          setProducts([]);
+          setTotalPages(1);
+          setError(requestError.message);
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadProducts();
 
     return () => controller.abort();
   }, [
-    currentPage,
-    selectedCategory,
-    currentCategory,
+    activeCategory,
     selectedBrand,
     appliedPriceRange,
     searchTerm,
+    currentPage,
   ]);
 
   const handleApplyCustomPrice = () => {
-    const min = Number(minPrice) || 0;
-    const max = Number(maxPrice) || Infinity;
-    setAppliedPriceRange({ min, max });
+    const parsedMin = Number(minPrice);
+    const parsedMax = Number(maxPrice);
+
+    const min =
+      Number.isFinite(parsedMin) && parsedMin >= 0
+        ? parsedMin
+        : 0;
+
+    const max =
+      Number.isFinite(parsedMax) && parsedMax > 0
+        ? parsedMax
+        : Infinity;
+
+    const normalizedMax = max < min ? min : max;
+
+    setAppliedPriceRange({
+      min,
+      max: normalizedMax,
+    });
+
     setSelectedPriceLabel(
-      `${min.toLocaleString("vi-VN")}đ - ${max.toLocaleString("vi-VN")}đ`,
+      normalizedMax === Infinity
+        ? `Từ ${min.toLocaleString("vi-VN")}đ`
+        : `${min.toLocaleString(
+            "vi-VN",
+          )}đ - ${normalizedMax.toLocaleString(
+            "vi-VN",
+          )}đ`,
+    );
+  };
+
+  const handleSelectPriceRange = (range) => {
+    setAppliedPriceRange({
+      min: range.min,
+      max: range.max,
+    });
+
+    setSelectedPriceLabel(range.label);
+    setMinPrice(String(range.min));
+
+    setMaxPrice(
+      range.max === Infinity
+        ? ""
+        : String(range.max),
     );
   };
 
@@ -280,36 +480,49 @@ function ProductList() {
     setSelectedCategory(null);
     setSelectedBrand("Thương hiệu");
     setSelectedPriceLabel("Khoảng giá");
-    setAppliedPriceRange({ min: 0, max: Infinity });
+
+    setAppliedPriceRange({
+      min: 0,
+      max: Infinity,
+    });
+
     setMinPrice("0");
     setMaxPrice("500000000");
     setSearchTerm("");
     setSearchInput("");
+    setCurrentPage(1);
   };
 
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
-    setSearchTerm(searchInput);
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
+    setSearchTerm(searchInput.trim());
+  };
+
+  const handleCategorySelect = (category) => {
+    const selectedSlug = getCategorySlug(selectedCategory);
+    const clickedSlug = getCategorySlug(category);
+
+    setSelectedCategory(
+      selectedSlug === clickedSlug ? null : category,
+    );
   };
 
   return (
     <div className="container product-page py-4 px-xl-5">
       <ScrollToTopOnMount />
 
-      {/* Banner / Header */}
       <section className="product-page-hero">
         <div>
-          <span className="product-page-kicker">ElectroShop collection</span>
-          <h1>
-            {selectedCategory
-              ? selectedCategory.name || selectedCategory.category_name
-              : currentCategory
-                ? currentCategory.name
-                : "Tất cả sản phẩm"}
-          </h1>
+          <span className="product-page-kicker">
+            ElectroShop collection
+          </span>
+
+          <h1>{pageTitle}</h1>
+
           <p>
-            Khám phá sản phẩm công nghệ nổi bật, sắp xếp gọn gàng để người dùng
-            xem nhanh, so sánh dễ và thêm vào giỏ chỉ trong một nhịp.
+            Khám phá sản phẩm công nghệ nổi bật, sắp xếp
+            gọn gàng để người dùng xem nhanh, so sánh dễ
+            và thêm vào giỏ chỉ trong một nhịp.
           </p>
         </div>
 
@@ -318,19 +531,27 @@ function ProductList() {
             <FontAwesomeIcon icon={["fas", "truck"]} />
             Giao nhanh
           </span>
+
           <span>
-            <FontAwesomeIcon icon={["fas", "shield-alt"]} />
+            <FontAwesomeIcon
+              icon={["fas", "shield-alt"]}
+            />
             Bảo hành
           </span>
+
           <span>
-            <FontAwesomeIcon icon={["fas", "sync-alt"]} />
+            <FontAwesomeIcon
+              icon={["fas", "sync-alt"]}
+            />
             Đổi trả
           </span>
         </div>
       </section>
 
-      {/* Breadcrumb */}
-      <nav aria-label="breadcrumb" className="bg-custom-light rounded">
+      <nav
+        aria-label="breadcrumb"
+        className="bg-custom-light rounded"
+      >
         <ol className="breadcrumb p-3 mb-0">
           <li className="breadcrumb-item">
             <Link
@@ -340,17 +561,16 @@ function ProductList() {
               Sản phẩm
             </Link>
           </li>
-          <li className="breadcrumb-item active" aria-current="page">
-            {selectedCategory
-              ? selectedCategory.name || selectedCategory.category_name
-              : currentCategory
-                ? currentCategory.name
-                : "Tất cả sản phẩm"}
+
+          <li
+            className="breadcrumb-item active"
+            aria-current="page"
+          >
+            {pageTitle}
           </li>
         </ol>
       </nav>
 
-      {/* Horizontal Category Scroller (Mobile) */}
       <div className="h-scroller d-block d-lg-none mt-3">
         <nav className="nav h-underline">
           <div className="h-link me-2">
@@ -362,29 +582,43 @@ function ProductList() {
               Tất cả
             </Link>
           </div>
-          {categories.map((item) => (
-            <div key={item.slug || item.category_slug} className="h-link me-2">
-              <Link
-                to={
-                  item.slug === "all"
-                    ? "/products"
-                    : `/category/${item.slug || item.category_slug}`
-                }
-                className="btn btn-sm btn-outline-dark rounded-pill"
-              >
-                {item.name || item.category_name}
-              </Link>
-            </div>
-          ))}
+
+          {categories
+            .filter(
+              (category) =>
+                getCategorySlug(category) !== "all",
+            )
+            .map((category) => {
+              const slug = getCategorySlug(category);
+
+              return (
+                <div
+                  key={slug}
+                  className="h-link me-2"
+                >
+                  <Link
+                    to={`/category/${slug}`}
+                    className="btn btn-sm btn-outline-dark rounded-pill"
+                  >
+                    {getCategoryName(category)}
+                  </Link>
+                </div>
+              );
+            })}
         </nav>
       </div>
 
-      {/* Accordion Filter (Mobile) */}
       <div className="row mb-3 d-block d-lg-none mt-3">
         <div className="col-12">
-          <div id="accordionFilter" className="accordion shadow-sm">
+          <div
+            id="accordionFilter"
+            className="accordion shadow-sm"
+          >
             <div className="accordion-item">
-              <h2 className="accordion-header" id="headingOne">
+              <h2
+                className="accordion-header"
+                id="headingOne"
+              >
                 <button
                   className="accordion-button fw-bold collapsed"
                   type="button"
@@ -420,131 +654,147 @@ function ProductList() {
         </div>
       </div>
 
-      {/* Layout Chính */}
       <div className="row mb-4 mt-lg-3 product-shop-layout">
         <div className="col-12">
           <div className="d-flex flex-column h-100">
-            {/* Title Block */}
             <div className="d-flex justify-content-between align-items-center mb-3 product-list-heading">
               <div>
                 <h3 className="fw-bold mb-1">
-                  {selectedCategory
-                    ? selectedCategory.name || selectedCategory.category_name
-                    : currentCategory
-                      ? currentCategory.name
-                      : "Tất cả sản phẩm"}
+                  {pageTitle}
                 </h3>
+
                 <p className="text-muted mb-0">
-                  Tìm kiếm và lựa chọn sản phẩm điện tử phù hợp với nhu cầu.
+                  Tìm kiếm và lựa chọn sản phẩm điện tử
+                  phù hợp với nhu cầu.
                 </p>
               </div>
             </div>
 
-            {/* Quick Filter Bar */}
-            <div className="filter-toolbar mb-3 d-flex flex-wrap gap-2 position-relative">
+            <div className="filter-toolbar mb-3 d-flex align-items-center flex-wrap gap-2">
               <button
-                className={`filter-chip ${showFilter ? "active" : ""}`}
-                onClick={() => setShowFilter(!showFilter)}
+                type="button"
+                className={`filter-chip ${
+                  showFilter ? "active" : ""
+                }`}
+                onClick={() =>
+                  setShowFilter((previous) => !previous)
+                }
               >
-                <FontAwesomeIcon icon={["fas", "sliders-h"]} />
+                <FontAwesomeIcon
+                  icon={["fas", "sliders-h"]}
+                />
                 Bộ lọc
               </button>
 
-              {/* DROPDOWN CHỌN DANH MỤC */}
-              <div className="position-relative d-inline-block">
-                <button
-                  className={`filter-chip ${selectedCategory ? "active" : ""}`}
-                  onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
-                >
-                  {selectedCategory
-                    ? selectedCategory.name || selectedCategory.category_name
-                    : currentCategory
-                      ? currentCategory.name
-                      : "Danh mục"}
-                  <FontAwesomeIcon
-                    icon={["fas", "angle-down"]}
-                    className="ms-1"
-                  />
-                </button>
+              {selectedCategory && (
+                <span className="filter-chip active">
+                  {getCategoryName(selectedCategory)}
 
-                {showCategoryDropdown && (
-                  <ul
-                    className="dropdown-menu show position-absolute mt-1 shadow-lg rounded-3 border-0 p-2"
-                    style={{
-                      zIndex: 1050,
-                      minWidth: "220px",
-                      top: "100%",
-                      left: 0,
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedCategory(null)
+                    }
+                  >
+                    ✕
+                  </button>
+                </span>
+              )}
+
+              {selectedBrand !== "Thương hiệu" && (
+                <span className="filter-chip active">
+                  {selectedBrand}
+
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedBrand("Thương hiệu")
+                    }
+                  >
+                    ✕
+                  </button>
+                </span>
+              )}
+
+              {selectedPriceLabel !== "Khoảng giá" && (
+                <span className="filter-chip active">
+                  {selectedPriceLabel}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPriceLabel(
+                        "Khoảng giá",
+                      );
+
+                      setAppliedPriceRange({
+                        min: 0,
+                        max: Infinity,
+                      });
+
+                      setMinPrice("0");
+                      setMaxPrice("500000000");
                     }}
                   >
-                    <li>
-                      <button
-                        className={`dropdown-item rounded py-2 ${
-                          !selectedCategory ? "fw-bold text-danger" : ""
-                        }`}
-                        onClick={() => {
-                          setSelectedCategory(null);
-                          setShowCategoryDropdown(false);
-                        }}
-                      >
-                        Tất cả danh mục
-                      </button>
-                    </li>
-                    <hr className="dropdown-divider my-1" />
-                    {categories.map((cat) => (
-                      <li key={cat.slug || cat.category_id}>
-                        <button
-                          className={`dropdown-item rounded py-2 ${
-                            selectedCategory?.slug === cat.slug ||
-                            selectedCategory?.category_id === cat.category_id
-                              ? "active bg-danger text-white"
-                              : ""
-                          }`}
-                          onClick={() => {
-                            setSelectedCategory(cat);
-                            setShowCategoryDropdown(false);
-                          }}
-                        >
-                          {cat.name || cat.category_name}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              <button className="filter-chip">
-                {selectedBrand}
-                <FontAwesomeIcon icon={["fas", "angle-down"]} />
-              </button>
-
-              <button className="filter-chip">
-                {selectedPriceLabel}
-                <FontAwesomeIcon icon={["fas", "angle-down"]} />
-              </button>
-
-              {(selectedCategory ||
-                selectedBrand !== "Thương hiệu" ||
-                selectedPriceLabel !== "Khoảng giá" ||
-                searchTerm) && (
-                <button
-                  className="btn btn-sm btn-outline-danger ms-auto rounded-pill"
-                  onClick={handleResetFilters}
-                >
-                  Xóa bộ lọc
-                </button>
+                    ✕
+                  </button>
+                </span>
               )}
             </div>
 
-            {/* Modal/Popup Lọc Nhanh */}
             {showFilter && (
               <div className="filter-popup mb-4 p-3 border rounded bg-light">
                 <div className="filter-box">
-                  <h5 className="mb-3">Thương hiệu</h5>
+                  {isProductPage && (
+                    <>
+                      <h5 className="mb-3">
+                        Danh mục
+                      </h5>
+
+                      <div className="filter-option-wrap d-flex flex-wrap gap-2 mb-4">
+                        {categories.map((category) => {
+                          const slug =
+                            getCategorySlug(category);
+
+                          const isSelected =
+                            getCategorySlug(
+                              selectedCategory,
+                            ) === slug;
+
+                          return (
+                            <button
+                              key={slug}
+                              type="button"
+                              className={`btn btn-sm ${
+                                isSelected
+                                  ? "btn-dark"
+                                  : "btn-outline-dark"
+                              }`}
+                              onClick={() =>
+                                handleCategorySelect(
+                                  category,
+                                )
+                              }
+                            >
+                              {getCategoryName(category)}
+                            </button>
+                          );
+                        })}
+                      </div>
+
+                      <hr />
+                    </>
+                  )}
+
+                  <h5 className="mb-3">
+                    Thương hiệu
+                  </h5>
+
                   <div className="filter-option-wrap d-flex flex-wrap gap-2 mb-3">
                     {brands.map((brand) => (
                       <button
                         key={brand}
+                        type="button"
                         className={`btn btn-sm ${
                           selectedBrand === brand
                             ? "btn-dark"
@@ -552,7 +802,9 @@ function ProductList() {
                         }`}
                         onClick={() =>
                           setSelectedBrand(
-                            selectedBrand === brand ? "Thương hiệu" : brand,
+                            selectedBrand === brand
+                              ? "Thương hiệu"
+                              : brand,
                           )
                         }
                       >
@@ -563,39 +815,81 @@ function ProductList() {
 
                   <hr />
 
-                  <h5 className="mb-3">Khoảng giá</h5>
+                  <h5 className="mb-3">
+                    Khoảng giá
+                  </h5>
+
                   <div className="filter-option-wrap d-flex flex-wrap gap-2 mb-3">
                     {priceRanges.map((range) => (
                       <button
                         key={range.label}
+                        type="button"
                         className={`btn btn-sm ${
-                          selectedPriceLabel === range.label
+                          selectedPriceLabel ===
+                          range.label
                             ? "btn-dark"
                             : "btn-outline-dark"
                         }`}
-                        onClick={() => {
-                          setAppliedPriceRange({
-                            min: range.min,
-                            max: range.max,
-                          });
-                          setSelectedPriceLabel(range.label);
-                        }}
+                        onClick={() =>
+                          handleSelectPriceRange(range)
+                        }
                       >
                         {range.label}
                       </button>
                     ))}
                   </div>
 
-                  <div className="d-flex justify-content-end mt-4">
+                  <div className="row g-2 mt-2">
+                    <div className="col-md-6">
+                      <input
+                        type="number"
+                        min="0"
+                        className="form-control"
+                        placeholder="Giá thấp nhất"
+                        value={minPrice}
+                        onChange={(event) =>
+                          setMinPrice(event.target.value)
+                        }
+                      />
+                    </div>
+
+                    <div className="col-md-6">
+                      <input
+                        type="number"
+                        min="0"
+                        className="form-control"
+                        placeholder="Giá cao nhất"
+                        value={maxPrice}
+                        onChange={(event) =>
+                          setMaxPrice(event.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+
+                  <div className="d-flex justify-content-end gap-2 mt-4">
                     <button
-                      className="btn btn-light me-2"
+                      type="button"
+                      className="btn btn-light"
                       onClick={handleResetFilters}
                     >
                       Xóa bộ lọc
                     </button>
+
                     <button
+                      type="button"
+                      className="btn btn-dark"
+                      onClick={handleApplyCustomPrice}
+                    >
+                      Áp dụng giá
+                    </button>
+
+                    <button
+                      type="button"
                       className="btn btn-danger"
-                      onClick={() => setShowFilter(false)}
+                      onClick={() =>
+                        setShowFilter(false)
+                      }
                     >
                       Đóng
                     </button>
@@ -604,36 +898,58 @@ function ProductList() {
               </div>
             )}
 
-            {/* Thanh tìm kiếm & Đổi kiểu hiển thị */}
             <div className="search-toolbar d-flex align-items-center mb-4">
-              <form onSubmit={handleSearchSubmit} className="input-group">
+              <form
+                onSubmit={handleSearchSubmit}
+                className="input-group"
+              >
                 <input
+                  type="search"
                   className="form-control"
                   placeholder="Tìm sản phẩm..."
                   value={searchInput}
-                  onChange={(e) => setSearchInput(e.target.value)}
+                  onChange={(event) =>
+                    setSearchInput(event.target.value)
+                  }
                 />
-                <button type="submit" className="btn btn-dark">
-                  <FontAwesomeIcon icon={["fas", "search"]} />
+
+                <button
+                  type="submit"
+                  className="btn btn-dark"
+                >
+                  <FontAwesomeIcon
+                    icon={["fas", "search"]}
+                  />
                 </button>
               </form>
 
               <button
+                type="button"
                 className="btn btn-outline-dark ms-3"
-                onClick={() => setViewType({ grid: !viewType.grid })}
+                onClick={() =>
+                  setViewType((previous) => ({
+                    grid: !previous.grid,
+                  }))
+                }
                 title="Đổi giao diện hiển thị"
               >
                 <FontAwesomeIcon
-                  icon={["fas", viewType.grid ? "th-list" : "th-large"]}
+                  icon={[
+                    "fas",
+                    viewType.grid
+                      ? "th-list"
+                      : "th-large",
+                  ]}
                 />
               </button>
             </div>
 
-            {/* Danh sách Sản phẩm */}
             <div
               className={
                 "row row-cols-1 row-cols-md-2 row-cols-lg-2 g-3 mb-4 flex-shrink-0 " +
-                (viewType.grid ? "row-cols-xl-3" : "row-cols-xl-2")
+                (viewType.grid
+                  ? "row-cols-xl-3"
+                  : "row-cols-xl-2")
               }
             >
               {loading && (
@@ -641,96 +957,147 @@ function ProductList() {
                   <div
                     className="spinner-border text-dark me-2"
                     role="status"
-                  ></div>
+                  />
+
                   Đang tải sản phẩm từ database...
                 </div>
               )}
 
-              {error && (
-                <div className="col-12 alert alert-danger">
-                  Lỗi kết nối Backend: {error}
-                </div>
-              )}
-
-              {!loading && !error && products.length === 0 && (
-                <div className="col-12 py-5 text-center text-muted">
-                  Không tìm thấy sản phẩm nào phù hợp.
+              {!loading && error && (
+                <div className="col-12">
+                  <div className="alert alert-danger">
+                    Lỗi kết nối Backend: {error}
+                  </div>
                 </div>
               )}
 
               {!loading &&
                 !error &&
+                products.length === 0 && (
+                  <div className="col-12 py-5 text-center text-muted">
+                    Không tìm thấy sản phẩm nào phù hợp.
+                  </div>
+                )}
+
+              {!loading &&
+                !error &&
                 products.map((product, index) => {
-                  const itemKey = product.id || index;
+                  const productKey =
+                    product.id ||
+                    product.product_id ||
+                    index;
+
                   return viewType.grid ? (
                     <Product
-                      key={itemKey}
+                      key={productKey}
                       product={product}
-                      percentOff={product.percentOff}
+                      percentOff={
+                        product.percentOff
+                      }
                     />
                   ) : (
                     <ProductH
-                      key={itemKey}
+                      key={productKey}
                       product={product}
-                      percentOff={product.percentOff}
+                      percentOff={
+                        product.percentOff
+                      }
                     />
                   );
                 })}
             </div>
 
-            {/* Phân trang động */}
-            <div className="d-flex align-items-center mt-auto">
-              <span className="text-muted small d-none d-md-inline">
-                Trang {currentPage} / {totalPages} (Hiển thị {products.length}{" "}
-                sản phẩm)
-              </span>
+            {!loading && !error && totalPages > 0 && (
+              <div className="d-flex align-items-center mt-auto">
+                <span className="text-muted small d-none d-md-inline">
+                  Trang {currentPage} / {totalPages}{" "}
+                  (Hiển thị {products.length} sản phẩm)
+                </span>
 
-              <nav aria-label="Page navigation" className="ms-auto">
-                <ul className="pagination my-0">
-                  <li
-                    className={`page-item ${currentPage === 1 ? "disabled" : ""}`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.max(prev - 1, 1))
-                      }
+                <nav
+                  aria-label="Page navigation"
+                  className="ms-auto"
+                >
+                  <ul className="pagination my-0">
+                    <li
+                      className={`page-item ${
+                        currentPage === 1
+                          ? "disabled"
+                          : ""
+                      }`}
                     >
-                      Trước
-                    </button>
-                  </li>
+                      <button
+                        type="button"
+                        className="page-link"
+                        disabled={currentPage === 1}
+                        onClick={() =>
+                          setCurrentPage((previous) =>
+                            Math.max(
+                              previous - 1,
+                              1,
+                            ),
+                          )
+                        }
+                      >
+                        Trước
+                      </button>
+                    </li>
 
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                    (num) => (
+                    {Array.from(
+                      {
+                        length: totalPages,
+                      },
+                      (_, index) => index + 1,
+                    ).map((pageNumber) => (
                       <li
-                        key={num}
-                        className={`page-item ${currentPage === num ? "active" : ""}`}
+                        key={pageNumber}
+                        className={`page-item ${
+                          currentPage === pageNumber
+                            ? "active"
+                            : ""
+                        }`}
                       >
                         <button
+                          type="button"
                           className="page-link"
-                          onClick={() => setCurrentPage(num)}
+                          onClick={() =>
+                            setCurrentPage(pageNumber)
+                          }
                         >
-                          {num}
+                          {pageNumber}
                         </button>
                       </li>
-                    ),
-                  )}
+                    ))}
 
-                  <li
-                    className={`page-item ${currentPage === totalPages ? "disabled" : ""}`}
-                  >
-                    <button
-                      className="page-link"
-                      onClick={() =>
-                        setCurrentPage((prev) => Math.min(prev + 1, totalPages))
-                      }
+                    <li
+                      className={`page-item ${
+                        currentPage === totalPages
+                          ? "disabled"
+                          : ""
+                      }`}
                     >
-                      Tiếp
-                    </button>
-                  </li>
-                </ul>
-              </nav>
-            </div>
+                      <button
+                        type="button"
+                        className="page-link"
+                        disabled={
+                          currentPage === totalPages
+                        }
+                        onClick={() =>
+                          setCurrentPage((previous) =>
+                            Math.min(
+                              previous + 1,
+                              totalPages,
+                            ),
+                          )
+                        }
+                      >
+                        Tiếp
+                      </button>
+                    </li>
+                  </ul>
+                </nav>
+              </div>
+            )}
           </div>
         </div>
       </div>
