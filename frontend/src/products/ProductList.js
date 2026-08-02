@@ -143,6 +143,7 @@ function ProductList() {
 
   // State bộ lọc
   const [selectedBrand, setSelectedBrand] = useState("Thương hiệu");
+  const [selectedBrands, setSelectedBrands] = useState([]);
   const [selectedPriceLabel, setSelectedPriceLabel] = useState("Khoảng giá");
   const [searchTerm, setSearchTerm] = useState("");
   const [searchInput, setSearchInput] = useState("");
@@ -161,6 +162,7 @@ function ProductList() {
   const [error, setError] = useState("");
 
   const { categoryName } = useParams();
+  const isProductPage = !categoryName;
 
   // 1. TẢI DANH MỤC TỪ BACKEND
   useEffect(() => {
@@ -267,11 +269,14 @@ function ProductList() {
       }
 
       // 2. Lọc Thương hiệu
-      if (selectedBrand !== "Thương hiệu") {
+      // 2. Lọc Thương hiệu
+      if (selectedBrands.length > 0) {
         if (
-          !product.brand ||
-          String(product.brand).toLowerCase() !==
-            String(selectedBrand).toLowerCase()
+          !selectedBrands.some(
+            (brand) =>
+              brand.toLowerCase() ===
+              String(product.brand).toLowerCase()
+          )
         ) {
           return false;
         }
@@ -298,7 +303,7 @@ function ProductList() {
     products,
     selectedCategory,
     currentCategory,
-    selectedBrand,
+    selectedBrands,
     appliedPriceRange,
     searchTerm,
   ]);
@@ -315,6 +320,7 @@ function ProductList() {
   const handleResetFilters = () => {
     setSelectedCategory(null);
     setSelectedBrand("Thương hiệu");
+    setSelectedBrands([]);
     setSelectedPriceLabel("Khoảng giá");
     setAppliedPriceRange({ min: 0, max: Infinity });
     setMinPrice("0");
@@ -477,98 +483,72 @@ function ProductList() {
             </div>
 
             {/* Quick Filter Bar */}
-            <div className="filter-toolbar mb-3 d-flex flex-wrap gap-2 position-relative">
+            <div className="filter-toolbar mb-3 d-flex align-items-center flex-wrap gap-2">
+
               <button
-                className={`filter-chip ${showFilter ? "active" : ""}`}
+                className={`filter-chip ${showFilter ? "active" : ""
+                  }`}
                 onClick={() => setShowFilter(!showFilter)}
               >
-                <FontAwesomeIcon icon={["fas", "sliders-h"]} />
+                <FontAwesomeIcon
+                  icon={["fas", "sliders-h"]}
+                />
+
                 Bộ lọc
               </button>
+              {/* Filter Chips */}
 
-              {/* DROPDOWN CHỌN DANH MỤC */}
-              <div className="position-relative d-inline-block">
-                <button
-                  className={`filter-chip ${selectedCategory ? "active" : ""}`}
-                  onClick={() => setShowCategoryDropdown(!showCategoryDropdown)}
+              {selectedCategory && (
+                <span className="filter-chip active">
+                  {selectedCategory.name}
+                  <button
+                    type="button"
+                    onClick={() => setSelectedCategory(null)}
+                  >
+                    ✕
+                  </button>
+                </span>
+              )}
+
+              {selectedBrands.map((brand) => (
+                <span
+                  key={brand}
+                  className="filter-chip active"
                 >
-                  {selectedCategory
-                    ? selectedCategory.name || selectedCategory.category_name
-                    : currentCategory
-                      ? currentCategory.name
-                      : "Danh mục"}
-                  <FontAwesomeIcon
-                    icon={["fas", "angle-down"]}
-                    className="ms-1"
-                  />
-                </button>
+                  {brand}
 
-                {showCategoryDropdown && (
-                  <ul
-                    className="dropdown-menu show position-absolute mt-1 shadow-lg rounded-3 border-0 p-2"
-                    style={{
-                      zIndex: 1050,
-                      minWidth: "220px",
-                      top: "100%",
-                      left: 0,
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSelectedBrands(
+                        selectedBrands.filter(
+                          (b) => b !== brand
+                        )
+                      )
+                    }
+                  >
+                    ✕
+                  </button>
+                </span>
+              ))}
+
+              {selectedPriceLabel !== "Khoảng giá" && (
+                <span className="filter-chip active">
+                  {selectedPriceLabel}
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedPriceLabel("Khoảng giá");
+                      setAppliedPriceRange({
+                        min: 0,
+                        max: Infinity,
+                      });
                     }}
                   >
-                    <li>
-                      <button
-                        className={`dropdown-item rounded py-2 ${
-                          !selectedCategory ? "fw-bold text-danger" : ""
-                        }`}
-                        onClick={() => {
-                          setSelectedCategory(null);
-                          setShowCategoryDropdown(false);
-                        }}
-                      >
-                        Tất cả danh mục
-                      </button>
-                    </li>
-                    <hr className="dropdown-divider my-1" />
-                    {categories.map((cat) => (
-                      <li key={cat.slug || cat.category_id}>
-                        <button
-                          className={`dropdown-item rounded py-2 ${
-                            selectedCategory?.slug === cat.slug ||
-                            selectedCategory?.category_id === cat.category_id
-                              ? "active bg-danger text-white"
-                              : ""
-                          }`}
-                          onClick={() => {
-                            setSelectedCategory(cat);
-                            setShowCategoryDropdown(false);
-                          }}
-                        >
-                          {cat.name || cat.category_name}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-
-              <button className="filter-chip">
-                {selectedBrand}
-                <FontAwesomeIcon icon={["fas", "angle-down"]} />
-              </button>
-
-              <button className="filter-chip">
-                {selectedPriceLabel}
-                <FontAwesomeIcon icon={["fas", "angle-down"]} />
-              </button>
-
-              {(selectedCategory ||
-                selectedBrand !== "Thương hiệu" ||
-                selectedPriceLabel !== "Khoảng giá" ||
-                searchTerm) && (
-                <button
-                  className="btn btn-sm btn-outline-danger ms-auto rounded-pill"
-                  onClick={handleResetFilters}
-                >
-                  Xóa bộ lọc
-                </button>
+                    ✕
+                  </button>
+                </span>
               )}
             </div>
 
@@ -576,21 +556,61 @@ function ProductList() {
             {showFilter && (
               <div className="filter-popup mb-4 p-3 border rounded bg-light">
                 <div className="filter-box">
+
+                  {isProductPage && (
+                    <>
+                      <h5 className="mb-3">Danh mục</h5>
+
+                      <div className="filter-option-wrap d-flex flex-wrap gap-2 mb-4">
+                        {categories.map((cat) => (
+                          <button
+                            key={cat.slug}
+                            type="button"
+                            className={`btn btn-sm ${selectedCategory?.slug === cat.slug
+                              ? "btn-dark"
+                              : "btn-outline-dark"
+                              }`}
+                            onClick={() => {
+                              setSelectedCategory(
+                                selectedCategory?.slug === cat.slug
+                                  ? null
+                                  : cat
+                              );
+                            }}
+                          >
+                            {cat.name}
+                          </button>
+                        ))}
+                      </div>
+
+                      <hr />
+                    </>
+                  )}
+
+                  <hr />
                   <h5 className="mb-3">Thương hiệu</h5>
                   <div className="filter-option-wrap d-flex flex-wrap gap-2 mb-3">
                     {brands.map((brand) => (
                       <button
                         key={brand}
-                        className={`btn btn-sm ${
-                          selectedBrand === brand
-                            ? "btn-dark"
-                            : "btn-outline-dark"
-                        }`}
-                        onClick={() =>
-                          setSelectedBrand(
-                            selectedBrand === brand ? "Thương hiệu" : brand,
-                          )
-                        }
+                        className={`btn btn-sm ${selectedBrands.includes(brand)
+                          ? "btn-dark"
+                          : "btn-outline-dark"
+                          }`}
+                        onClick={() => {
+                          if (selectedBrands.includes(brand)) {
+                            setSelectedBrands(
+                              selectedBrands.filter(
+                                (b) => b !== brand
+                              )
+                            );
+                          } else {
+                            setSelectedBrands([
+                              ...selectedBrands,
+                              brand,
+                            ]);
+                          }
+                        }}
                       >
                         {brand}
                       </button>
@@ -604,11 +624,10 @@ function ProductList() {
                     {priceRanges.map((range) => (
                       <button
                         key={range.label}
-                        className={`btn btn-sm ${
-                          selectedPriceLabel === range.label
-                            ? "btn-dark"
-                            : "btn-outline-dark"
-                        }`}
+                        className={`btn btn-sm ${selectedPriceLabel === range.label
+                          ? "btn-dark"
+                          : "btn-outline-dark"
+                          }`}
                         onClick={() => {
                           setAppliedPriceRange({
                             min: range.min,
