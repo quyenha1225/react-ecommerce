@@ -6210,3 +6210,112 @@ button {
 .staff-action-buttons button:hover {
   background: #2563eb;
 }
+.staff-customers-page {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 24px;
+}
+
+.staff-avatar-placeholder {
+  width: 46px;
+
+  height: 46px;
+
+  border-radius: 50%;
+
+  background: #30363d;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  color: #9ca3af;
+
+  font-size: 18px;
+}
+.staff-reports-page {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 24px;
+}
+.staff-profile-page {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 24px;
+}
+
+.staff-profile-card {
+  background: #1b1f24;
+
+  border-radius: 16px;
+
+  padding: 30px;
+
+  display: flex;
+
+  gap: 40px;
+}
+
+.staff-profile-avatar {
+  width: 140px;
+
+  height: 140px;
+
+  border-radius: 50%;
+
+  background: #30363d;
+
+  display: flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  font-size: 48px;
+
+  color: #9ca3af;
+}
+
+.staff-profile-info {
+  flex: 1;
+
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 20px;
+}
+
+.staff-profile-row {
+  display: flex;
+
+  flex-direction: column;
+
+  gap: 8px;
+}
+
+.staff-profile-row label {
+  color: #9ca3af;
+}
+
+.staff-profile-row input {
+  height: 44px;
+
+  border: none;
+
+  border-radius: 10px;
+
+  padding: 0 16px;
+
+  background: #252932;
+
+  color: white;
+}

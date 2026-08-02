@@ -89,6 +89,12 @@ function Staff() {
             id: index + 1,
         })
     );
+    const customers = Array.from(
+        { length: 10 },
+        (_, index) => ({
+            id: index + 1,
+        })
+    );
     return (
         <div className="staff-page">
 
@@ -1065,15 +1071,492 @@ function Staff() {
                     )}
 
                     {tab === "customers" && (
-                        <h1>Khách hàng</h1>
+
+                        <div className="staff-customers-page">
+
+                            <div className="staff-page-header">
+
+                                <div>
+
+                                    <h1>
+
+                                        Khách hàng
+
+                                    </h1>
+
+                                    <p>
+
+                                        Quản lý thông tin khách hàng.
+
+                                    </p>
+
+                                </div>
+
+                                <button className="staff-btn-primary">
+
+                                    <FontAwesomeIcon
+                                        icon={["fas", "user-plus"]}
+                                    />
+
+                                    Thêm khách hàng
+
+                                </button>
+
+                            </div>
+
+                            <div className="staff-toolbar">
+
+                                <input
+                                    placeholder="Tìm khách hàng..."
+                                />
+
+                                <select>
+
+                                    <option>
+
+                                        Trạng thái
+
+                                    </option>
+
+                                </select>
+
+                                <button>
+
+                                    Xuất Excel
+
+                                </button>
+
+                            </div>
+
+                            <div className="staff-table-wrapper">
+
+                                <table className="staff-table">
+
+                                    <thead>
+
+                                        <tr>
+
+                                            <th>ID</th>
+
+                                            <th>Avatar</th>
+
+                                            <th>Họ tên</th>
+
+                                            <th>Email</th>
+
+                                            <th>SĐT</th>
+
+                                            <th>Điểm</th>
+
+                                            <th>Thao tác</th>
+
+                                        </tr>
+
+                                    </thead>
+
+                                    <tbody>
+
+                                        {customers.map((item) => (
+
+                                            <tr key={item.id}>
+
+                                                <td>
+
+                                                    KH{item.id}
+
+                                                </td>
+
+                                                <td>
+
+                                                    <div className="staff-avatar-placeholder">
+
+                                                        <FontAwesomeIcon
+                                                            icon={["fas", "user"]}
+                                                        />
+
+                                                    </div>
+
+                                                </td>
+
+                                                <td>
+
+                                                    ----------------------
+
+                                                </td>
+
+                                                <td>
+
+                                                    -------------------------
+
+                                                </td>
+
+                                                <td>
+
+                                                    ----------
+
+                                                </td>
+
+                                                <td>
+
+                                                    --
+
+                                                </td>
+
+                                                <td>
+
+                                                    <div className="staff-action-buttons">
+
+                                                        <button>
+
+                                                            <FontAwesomeIcon
+                                                                icon={["fas", "eye"]}
+                                                            />
+
+                                                        </button>
+
+                                                        <button>
+
+                                                            <FontAwesomeIcon
+                                                                icon={["fas", "pen"]}
+                                                            />
+
+                                                        </button>
+
+                                                    </div>
+
+                                                </td>
+
+                                            </tr>
+
+                                        ))}
+
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+
+                            <div className="staff-pagination">
+
+                                <button>
+
+                                    ←
+
+                                </button>
+
+                                <button className="active">
+
+                                    1
+
+                                </button>
+
+                                <button>
+
+                                    2
+
+                                </button>
+
+                                <button>
+
+                                    →
+
+                                </button>
+
+                            </div>
+
+                        </div>
+
                     )}
 
                     {tab === "reports" && (
-                        <h1>Thống kê</h1>
-                    )}
 
+                        <div className="staff-reports-page">
+
+                            <div className="staff-page-header">
+
+                                <div>
+
+                                    <h1>
+
+                                        Thống kê
+
+                                    </h1>
+
+                                    <p>
+
+                                        Tổng quan doanh thu và hiệu suất kinh doanh.
+
+                                    </p>
+
+                                </div>
+
+                                <button className="staff-btn-primary">
+
+                                    <FontAwesomeIcon
+                                        icon={["fas", "download"]}
+                                    />
+
+                                    Xuất báo cáo
+
+                                </button>
+
+                            </div>
+
+                            <div className="staff-dashboard-cards">
+
+                                {dashboardCards.map(card => (
+
+                                    <div
+                                        key={card.title}
+                                        className="staff-card"
+                                    >
+
+                                        <div className="staff-card-top">
+
+                                            <div
+                                                className="staff-card-icon"
+                                                style={{
+                                                    background: card.color
+                                                }}
+                                            >
+
+                                                <FontAwesomeIcon
+                                                    icon={[
+                                                        "fas",
+                                                        card.icon
+                                                    ]}
+                                                />
+
+                                            </div>
+
+                                            <span>
+
+                                                +0%
+
+                                            </span>
+
+                                        </div>
+
+                                        <div className="staff-card-body">
+
+                                            <p>
+
+                                                {card.title}
+
+                                            </p>
+
+                                            <h2>
+
+                                                --
+
+                                            </h2>
+
+                                        </div>
+
+                                    </div>
+
+                                ))}
+
+                            </div>
+
+                            <div className="staff-chart-panel">
+
+                                <div className="staff-panel-header">
+
+                                    <h3>
+
+                                        Biểu đồ doanh thu
+
+                                    </h3>
+
+                                </div>
+
+                                <div className="staff-chart">
+
+                                    <div className="chart-placeholder">
+
+                                        <FontAwesomeIcon
+                                            icon={["fas", "chart-line"]}
+                                        />
+
+                                        <p>
+
+                                            Revenue Chart
+
+                                        </p>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <div className="staff-table-wrapper">
+
+                                <table className="staff-table">
+
+                                    <thead>
+
+                                        <tr>
+
+                                            <th>Tháng</th>
+
+                                            <th>Doanh thu</th>
+
+                                            <th>Đơn hàng</th>
+
+                                            <th>Khách hàng</th>
+
+                                        </tr>
+
+                                    </thead>
+
+                                    <tbody>
+
+                                        {[1, 2, 3, 4, 5].map(item => (
+
+                                            <tr key={item}>
+
+                                                <td>
+
+                                                    Tháng --
+
+                                                </td>
+
+                                                <td>
+
+                                                    ----------
+
+                                                </td>
+
+                                                <td>
+
+                                                    --
+
+                                                </td>
+
+                                                <td>
+
+                                                    --
+
+                                                </td>
+
+                                            </tr>
+
+                                        ))}
+
+                                    </tbody>
+
+                                </table>
+
+                            </div>
+
+                        </div>
+
+                    )}
                     {tab === "profile" && (
-                        <h1>Tài khoản</h1>
+
+                        <div className="staff-profile-page">
+
+                            <div className="staff-page-header">
+
+                                <div>
+
+                                    <h1>
+
+                                        Tài khoản
+
+                                    </h1>
+
+                                    <p>
+
+                                        Thông tin tài khoản nhân viên.
+
+                                    </p>
+
+                                </div>
+
+                            </div>
+
+                            <div className="staff-profile-card">
+
+                                <div className="staff-profile-avatar">
+
+                                    <FontAwesomeIcon
+                                        icon={["fas", "user"]}
+                                    />
+
+                                </div>
+
+                                <div className="staff-profile-info">
+
+                                    <div className="staff-profile-row">
+
+                                        <label>
+
+                                            Họ tên
+
+                                        </label>
+
+                                        <input
+                                            value=""
+                                            readOnly
+                                        />
+
+                                    </div>
+
+                                    <div className="staff-profile-row">
+
+                                        <label>
+
+                                            Email
+
+                                        </label>
+
+                                        <input
+                                            value=""
+                                            readOnly
+                                        />
+
+                                    </div>
+
+                                    <div className="staff-profile-row">
+
+                                        <label>
+
+                                            Vai trò
+
+                                        </label>
+
+                                        <input
+                                            value=""
+                                            readOnly
+                                        />
+
+                                    </div>
+
+                                    <div className="staff-profile-row">
+
+                                        <label>
+
+                                            Mật khẩu
+
+                                        </label>
+
+                                        <button className="staff-btn-primary">
+
+                                            Đổi mật khẩu
+
+                                        </button>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
                     )}
 
                 </main>
