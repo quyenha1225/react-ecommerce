@@ -4,43 +4,735 @@ import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import "./account.css";
 
-const money = value => `${Number(value || 0).toLocaleString("vi-VN")} ₫`;
-const date = value => value ? new Date(value).toLocaleString("vi-VN") : "—";
-const statusTone = { PENDING:"amber",CONFIRMED:"blue",PACKING:"blue",SHIPPING:"purple",DELIVERED:"green",CANCELLED:"red",RETURNED:"red",PAID:"green",UNPAID:"amber" };
+const money = (value) => `${Number(value || 0).toLocaleString("vi-VN")} ₫`;
+const date = (value) => (value ? new Date(value).toLocaleString("vi-VN") : "—");
+const statusTone = {
+  PENDING: "amber",
+  CONFIRMED: "blue",
+  PACKING: "blue",
+  SHIPPING: "purple",
+  DELIVERED: "green",
+  CANCELLED: "red",
+  RETURNED: "red",
+  PAID: "green",
+  UNPAID: "amber",
+};
 
 export default function Account() {
   const { session, api, logout, updateSessionUser } = useAuth();
-  const [tab,setTab]=useState("overview"), [profile,setProfile]=useState(null), [orders,setOrders]=useState([]), [addresses,setAddresses]=useState([]);
-  const [selected,setSelected]=useState(null), [loading,setLoading]=useState(true), [toast,setToast]=useState(null);
-  const load=useCallback(async()=>{setLoading(true);try{const [me,os,as]=await Promise.all([api("/account/me"),api("/orders/my"),api("/account/addresses")]);setProfile(me);setOrders(os);setAddresses(as);}catch(e){setToast({type:"error",text:e.message});}finally{setLoading(false)}},[api]);
-  useEffect(()=>{if(session)load()},[session,load]);
-  if(!session) return <Navigate to="/" replace/>;
-  const notify=(text,type="success")=>{setToast({text,type});setTimeout(()=>setToast(null),3500)};
-  const openOrder=async id=>{try{setSelected(await api(`/orders/my/${id}`));}catch(e){notify(e.message,"error")}};
-  const nav=[["overview","th-large","Tổng quan"],["orders","box-open","Đơn hàng của tôi"],["profile","user-edit","Thông tin cá nhân"],["addresses","map-marker-alt","Sổ địa chỉ"],["password","shield-alt","Đổi mật khẩu"]];
-  return <main className="account-page">
-    {toast&&<div className={`account-toast ${toast.type}`}><FontAwesomeIcon icon={["fas",toast.type==="error"?"exclamation-circle":"check-circle"]}/><span>{toast.text}</span></div>}
-    <section className="account-hero"><div className="container account-hero-inner"><div className="account-avatar">{profile?.name?.trim()?.[0]?.toUpperCase()||"U"}</div><div><span>TRUNG TÂM KHÁCH HÀNG</span><h1>Xin chào, {profile?.name||session.user.name}</h1><p>Quản lý thông tin, địa chỉ và theo dõi mọi đơn hàng tại một nơi.</p></div><Link to="/products"><FontAwesomeIcon icon={["fas","shopping-bag"]}/> Tiếp tục mua sắm</Link></div></section>
-    <div className="container account-layout"><aside className="account-sidebar"><div className="account-mini"><b>{profile?.name}</b><small>{profile?.email}</small></div><nav>{nav.map(([key,icon,label])=><button key={key} className={tab===key?"active":""} onClick={()=>setTab(key)}><FontAwesomeIcon icon={["fas",icon]}/><span>{label}</span>{key==="orders"&&<em>{orders.length}</em>}</button>)}</nav><button className="account-logout" onClick={logout}><FontAwesomeIcon icon={["fas","sign-out-alt"]}/> Đăng xuất</button></aside>
-      <section className="account-content">{loading?<div className="account-loading"><i/><p>Đang tải dữ liệu tài khoản...</p></div>:<>
-        {tab==="overview"&&<Overview profile={profile} orders={orders} setTab={setTab} openOrder={openOrder}/>} 
-        {tab==="orders"&&<Orders orders={orders} openOrder={openOrder}/>} 
-        {tab==="profile"&&<Profile profile={profile} api={api} onSaved={p=>{setProfile(p);updateSessionUser({name:p.name,email:p.email,phone:p.phone});notify("Đã cập nhật thông tin tài khoản")}}/>}
-        {tab==="addresses"&&<Addresses addresses={addresses} api={api} setAddresses={setAddresses} notify={notify}/>} 
-        {tab==="password"&&<Password api={api} notify={notify}/>} 
-      </>}</section>
-    </div>{selected&&<OrderDetail order={selected} close={()=>setSelected(null)} cancel={async()=>{try{const next=await api(`/orders/${selected.id}/cancel`,{method:"PATCH"});setSelected(next);await load();notify("Đã hủy đơn hàng") }catch(e){notify(e.message,"error")}}}/>}
-  </main>;
+
+  // SỬA Ở ĐÂY: Cho phép nhận tab từ localStorage (được truyền sang từ trang thanh toán) hoặc mặc định là "overview"
+  const [tab, setTab] = useState(() => {
+    const savedTab = localStorage.getItem("account_active_tab");
+    if (savedTab) {
+      localStorage.removeItem("account_active_tab"); // Xóa sau khi đọc để lần sau vào lại overview bình thường
+      return savedTab;
+    }
+    return "overview";
+  });
+
+  const [profile, setProfile] = useState(null),
+    [orders, setOrders] = useState([]),
+    [addresses, setAddresses] = useState([]);
+  const [selected, setSelected] = useState(null),
+    [loading, setLoading] = useState(true),
+    [toast, setToast] = useState(null);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const [me, os, as] = await Promise.all([
+        api("/account/me"),
+        api("/orders/my"),
+        api("/account/addresses"),
+      ]);
+      setProfile(me);
+      setOrders(os);
+      setAddresses(as);
+    } catch (e) {
+      setToast({ type: "error", text: e.message });
+    } finally {
+      setLoading(false);
+    }
+  }, [api]);
+  useEffect(() => {
+    if (session) load();
+  }, [session, load]);
+  if (!session) return <Navigate to="/" replace />;
+  const notify = (text, type = "success") => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+  const openOrder = async (id) => {
+    try {
+      setSelected(await api(`/orders/my/${id}`));
+    } catch (e) {
+      notify(e.message, "error");
+    }
+  };
+  const nav = [
+    ["overview", "th-large", "Tổng quan"],
+    ["orders", "box-open", "Đơn hàng của tôi"],
+    ["profile", "user-edit", "Thông tin cá nhân"],
+    ["addresses", "map-marker-alt", "Sổ địa chỉ"],
+    ["password", "shield-alt", "Đổi mật khẩu"],
+  ];
+
+  return (
+    <main className="account-page">
+      {toast && (
+        <div className={`account-toast ${toast.type}`}>
+          <FontAwesomeIcon
+            icon={[
+              "fas",
+              toast.type === "error" ? "exclamation-circle" : "check-circle",
+            ]}
+          />
+          <span>{toast.text}</span>
+        </div>
+      )}
+      <section className="account-hero">
+        <div className="container account-hero-inner">
+          <div className="account-avatar">
+            {profile?.name?.trim()?.[0]?.toUpperCase() || "U"}
+          </div>
+          <div>
+            <span>TRUNG TÂM KHÁCH HÀNG</span>
+            <h1>Xin chào, {profile?.name || session.user.name}</h1>
+            <p>
+              Quản lý thông tin, địa chỉ và theo dõi mọi đơn hàng tại một nơi.
+            </p>
+          </div>
+          <Link to="/products">
+            <FontAwesomeIcon icon={["fas", "shopping-bag"]} /> Tiếp tục mua sắm
+          </Link>
+        </div>
+      </section>
+      <div className="container account-layout">
+        <aside className="account-sidebar">
+          <div className="account-mini">
+            <b>{profile?.name}</b>
+            <small>{profile?.email}</small>
+          </div>
+          <nav>
+            {nav.map(([key, icon, label]) => (
+              <button
+                key={key}
+                className={tab === key ? "active" : ""}
+                onClick={() => setTab(key)}
+              >
+                <FontAwesomeIcon icon={["fas", icon]} />
+                <span>{label}</span>
+                {key === "orders" && <em>{orders.length}</em>}
+              </button>
+            ))}
+          </nav>
+          <button className="account-logout" onClick={logout}>
+            <FontAwesomeIcon icon={["fas", "sign-out-alt"]} /> Đăng xuất
+          </button>
+        </aside>
+        <section className="account-content">
+          {loading ? (
+            <div className="account-loading">
+              <i />
+              <p>Đang tải dữ liệu tài khoản...</p>
+            </div>
+          ) : (
+            <>
+              {tab === "overview" && (
+                <Overview
+                  profile={profile}
+                  orders={orders}
+                  setTab={setTab}
+                  openOrder={openOrder}
+                />
+              )}
+              {tab === "orders" && (
+                <Orders orders={orders} openOrder={openOrder} />
+              )}
+              {tab === "profile" && (
+                <Profile
+                  profile={profile}
+                  api={api}
+                  onSaved={(p) => {
+                    setProfile(p);
+                    updateSessionUser({
+                      name: p.name,
+                      email: p.email,
+                      phone: p.phone,
+                    });
+                    notify("Đã cập nhật thông tin tài khoản");
+                  }}
+                />
+              )}
+              {tab === "addresses" && (
+                <Addresses
+                  addresses={addresses}
+                  api={api}
+                  setAddresses={setAddresses}
+                  notify={notify}
+                />
+              )}
+              {tab === "password" && <Password api={api} notify={notify} />}
+            </>
+          )}
+        </section>
+      </div>
+      {selected && (
+        <OrderDetail
+          order={selected}
+          close={() => setSelected(null)}
+          cancel={async () => {
+            try {
+              const next = await api(`/orders/${selected.id}/cancel`, {
+                method: "PATCH",
+              });
+              setSelected(next);
+              await load();
+              notify("Đã hủy đơn hàng");
+            } catch (e) {
+              notify(e.message, "error");
+            }
+          }}
+        />
+      )}
+    </main>
+  );
 }
 
-function Overview({profile,orders,setTab,openOrder}){const active=orders.filter(o=>!["DELIVERED","CANCELLED","RETURNED"].includes(o.status)).length;return <><Title eyebrow="TỔNG QUAN" title="Tài khoản của bạn" text="Theo dõi nhanh hoạt động mua sắm gần đây."/><div className="account-stats"><Stat icon="box" label="Tổng đơn hàng" value={profile?.orderCount||0}/><Stat icon="truck" label="Đang xử lý" value={active}/><Stat icon="wallet" label="Tổng đã chi" value={money(profile?.totalSpent)}/></div><div className="account-panel"><div className="panel-head"><div><h3>Đơn hàng gần đây</h3><p>Cập nhật trạng thái mới nhất của bạn</p></div><button onClick={()=>setTab("orders")}>Xem tất cả <FontAwesomeIcon icon={["fas","arrow-right"]}/></button></div><OrderRows orders={orders.slice(0,4)} openOrder={openOrder}/></div></>}
-function Stat({icon,label,value}){return <article><span><FontAwesomeIcon icon={["fas",icon]}/></span><div><small>{label}</small><strong>{value}</strong></div></article>}
-function Title({eyebrow,title,text}){return <header className="account-title"><span>{eyebrow}</span><h2>{title}</h2><p>{text}</p></header>}
-function Badge({code,name}){return <span className={`order-badge ${statusTone[code]||"gray"}`}>{name||code}</span>}
-function OrderRows({orders,openOrder}){if(!orders.length)return <div className="account-empty"><FontAwesomeIcon icon={["fas","box-open"]}/><h3>Chưa có đơn hàng</h3><p>Sản phẩm bạn đặt sẽ xuất hiện tại đây.</p><Link to="/products">Khám phá sản phẩm</Link></div>;return <div className="order-list">{orders.map(o=><article key={o.id}><div className="order-icon"><FontAwesomeIcon icon={["fas","box"]}/></div><div className="order-main"><b>{o.code}</b><small>{date(o.createdAt)} · {o.itemCount} sản phẩm</small></div><Badge code={o.status} name={o.statusName}/><div className="order-total"><small>Thành tiền</small><b>{money(o.total)}</b></div><button onClick={()=>openOrder(o.id)}>Chi tiết <FontAwesomeIcon icon={["fas","chevron-right"]}/></button></article>)}</div>}
-function Orders({orders,openOrder}){const [filter,setFilter]=useState("ALL");const filters=[["ALL","Tất cả"],["PENDING","Chờ xác nhận"],["SHIPPING","Đang giao"],["DELIVERED","Đã giao"],["CANCELLED","Đã hủy"]],shown=filter==="ALL"?orders:orders.filter(o=>filter==="SHIPPING"?["CONFIRMED","PACKING","SHIPPING"].includes(o.status):o.status===filter);return <><Title eyebrow="ĐƠN HÀNG" title="Lịch sử mua hàng" text="Xem giá, thanh toán và hành trình của từng đơn."/><div className="order-filters">{filters.map(([k,v])=><button className={filter===k?"active":""} onClick={()=>setFilter(k)} key={k}>{v}</button>)}</div><div className="account-panel"><OrderRows orders={shown} openOrder={openOrder}/></div></>}
-function Profile({profile,api,onSaved}){const [form,setForm]=useState({name:profile?.name||"",email:profile?.email||"",phone:profile?.phone||""}),[saving,setSaving]=useState(false);const submit=async e=>{e.preventDefault();setSaving(true);try{onSaved(await api("/account/profile",{method:"PATCH",body:JSON.stringify(form)}))}finally{setSaving(false)}};return <><Title eyebrow="HỒ SƠ" title="Thông tin cá nhân" text="Thông tin này được dùng khi bạn đặt và nhận hàng."/><form className="account-form account-panel" onSubmit={submit}><div className="form-grid"><Field label="Họ và tên" icon="user" name="name" value={form.name} setForm={setForm}/><Field label="Số điện thoại" icon="phone" name="phone" value={form.phone} setForm={setForm}/><Field label="Email" icon="envelope" type="email" name="email" value={form.email} setForm={setForm}/><Field label="Thành viên từ" icon="calendar-alt" value={new Date(profile.createdAt).toLocaleDateString("vi-VN")} disabled/></div><button className="account-primary" disabled={saving}><FontAwesomeIcon icon={["fas","save"]}/> {saving?"Đang lưu...":"Lưu thay đổi"}</button></form></>}
-function Field({label,icon,name,value,setForm,type="text",disabled=false,placeholder}){return <label className="account-field"><span>{label}</span><div><FontAwesomeIcon icon={["fas",icon]}/><input type={type} name={name} value={value} disabled={disabled} placeholder={placeholder} onChange={e=>setForm&&setForm(f=>({...f,[name]:e.target.value}))}/></div></label>}
-function Password({api,notify}){const [form,setForm]=useState({currentPassword:"",newPassword:"",confirm:""}),[busy,setBusy]=useState(false);const submit=async e=>{e.preventDefault();if(form.newPassword!==form.confirm)return notify("Mật khẩu xác nhận không khớp","error");setBusy(true);try{const r=await api("/account/password",{method:"PATCH",body:JSON.stringify({currentPassword:form.currentPassword,newPassword:form.newPassword})});notify(r.message);setForm({currentPassword:"",newPassword:"",confirm:""})}catch(err){notify(err.message,"error")}finally{setBusy(false)}};return <><Title eyebrow="BẢO MẬT" title="Thay đổi mật khẩu" text="Dùng mật khẩu mạnh để bảo vệ tài khoản của bạn."/><form className="account-form account-panel password-form" onSubmit={submit}><Field label="Mật khẩu hiện tại" icon="lock" type="password" name="currentPassword" value={form.currentPassword} setForm={setForm}/><Field label="Mật khẩu mới" icon="key" type="password" name="newPassword" value={form.newPassword} setForm={setForm}/><Field label="Xác nhận mật khẩu mới" icon="check-circle" type="password" name="confirm" value={form.confirm} setForm={setForm}/><p className="password-hint"><FontAwesomeIcon icon={["fas","info-circle"]}/> Ít nhất 10 ký tự, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.</p><button className="account-primary" disabled={busy}>Cập nhật mật khẩu</button></form></>}
-function Addresses({addresses,api,setAddresses,notify}){const blank={receiverName:"",receiverPhone:"",province:"",district:"",ward:"",street:"",isDefault:false};const [editing,setEditing]=useState(null),[form,setForm]=useState(blank);const edit=a=>{setEditing(a.id);setForm({...a,isDefault:Boolean(a.isDefault)})};const save=async e=>{e.preventDefault();try{const list=await api(`/account/addresses${editing?`/${editing}`:""}`,{method:editing?"PATCH":"POST",body:JSON.stringify(form)});setAddresses(list);setEditing(null);setForm(blank);notify("Đã lưu địa chỉ")}catch(err){notify(err.message,"error")}};const remove=async id=>{if(!window.confirm("Xóa địa chỉ này?"))return;await api(`/account/addresses/${id}`,{method:"DELETE"});setAddresses(a=>a.filter(x=>x.id!==id));notify("Đã xóa địa chỉ")};return <><Title eyebrow="GIAO HÀNG" title="Sổ địa chỉ" text="Lưu địa chỉ để đặt hàng nhanh hơn trong lần sau."/><div className="address-grid">{addresses.map(a=><article className="address-card" key={a.id}>{Boolean(a.isDefault)&&<em>Mặc định</em>}<span><FontAwesomeIcon icon={["fas","map-marker-alt"]}/></span><h3>{a.receiverName}</h3><b>{a.receiverPhone}</b><p>{a.street}, {a.ward}, {a.district}, {a.province}</p><div><button onClick={()=>edit(a)}><FontAwesomeIcon icon={["fas","edit"]}/> Sửa</button><button onClick={()=>remove(a.id)}><FontAwesomeIcon icon={["fas","trash"]}/> Xóa</button></div></article>)}</div><form className="account-form account-panel address-form" onSubmit={save}><div className="panel-head"><div><h3>{editing?"Chỉnh sửa địa chỉ":"Thêm địa chỉ mới"}</h3><p>Điền đầy đủ để giao hàng chính xác.</p></div>{editing&&<button type="button" onClick={()=>{setEditing(null);setForm(blank)}}>Hủy sửa</button>}</div><div className="form-grid"><Field label="Người nhận" icon="user" name="receiverName" value={form.receiverName} setForm={setForm}/><Field label="Số điện thoại" icon="phone" name="receiverPhone" value={form.receiverPhone} setForm={setForm}/><Field label="Tỉnh / Thành phố" icon="city" name="province" value={form.province} setForm={setForm}/><Field label="Quận / Huyện" icon="building" name="district" value={form.district} setForm={setForm}/><Field label="Phường / Xã" icon="map" name="ward" value={form.ward} setForm={setForm}/><Field label="Số nhà, tên đường" icon="home" name="street" value={form.street} setForm={setForm}/></div><label className="default-check"><input type="checkbox" checked={form.isDefault} onChange={e=>setForm(f=>({...f,isDefault:e.target.checked}))}/> Đặt làm địa chỉ mặc định</label><button className="account-primary">Lưu địa chỉ</button></form></>}
-function OrderDetail({order,close,cancel}){return <div className="order-modal" onMouseDown={e=>e.target===e.currentTarget&&close()}><section><header><div><span>CHI TIẾT ĐƠN HÀNG</span><h2>{order.code}</h2><p>Đặt lúc {date(order.createdAt)}</p></div><button onClick={close}>×</button></header><div className="order-modal-status"><Badge code={order.status} name={order.statusName}/><Badge code={order.paymentStatus} name={order.paymentStatusName}/></div><div className="detail-products">{order.items.map(i=><article key={`${i.productId}-${i.variantName||""}`}><div className="detail-image">{i.image?<img src={i.image} alt=""/>:<FontAwesomeIcon icon={["fas","image"]}/>}</div><div><Link to={`/products/${i.slug}`}>{i.name}</Link><small>{i.variantName||"Phiên bản tiêu chuẩn"} · SL: {i.quantity}</small></div><b>{money(i.unitPrice)}</b><strong>{money(i.lineTotal)}</strong></article>)}</div><div className="detail-grid"><div><h3><FontAwesomeIcon icon={["fas","map-marker-alt"]}/> Địa chỉ nhận hàng</h3><b>{order.receiverName} · {order.receiverPhone}</b><p>{order.street}, {order.ward}, {order.district}, {order.province}</p></div><div><h3><FontAwesomeIcon icon={["fas","credit-card"]}/> Thanh toán</h3><b>{order.paymentMethodName}</b><p>{order.paymentStatusName}</p></div></div><footer><div><span>Tổng thanh toán</span><strong>{money(order.total)}</strong></div>{["PENDING","CONFIRMED"].includes(order.status)&&<button className="cancel-order" onClick={cancel}>Hủy đơn hàng</button>}<button onClick={close}>Đóng</button></footer></section></div>}
+function Overview({ profile, orders, setTab, openOrder }) {
+  const active = orders.filter(
+    (o) => !["DELIVERED", "CANCELLED", "RETURNED"].includes(o.status),
+  ).length;
+  return (
+    <>
+      <Title
+        eyebrow="TỔNG QUAN"
+        title="Tài khoản của bạn"
+        text="Theo dõi nhanh hoạt động mua sắm gần đây."
+      />
+      <div className="account-stats">
+        <Stat
+          icon="box"
+          label="Tổng đơn hàng"
+          value={profile?.orderCount || 0}
+        />
+        <Stat icon="truck" label="Đang xử lý" value={active} />
+        <Stat
+          icon="wallet"
+          label="Tổng đã chi"
+          value={money(profile?.totalSpent)}
+        />
+      </div>
+      <div className="account-panel">
+        <div className="panel-head">
+          <div>
+            <h3>Đơn hàng gần đây</h3>
+            <p>Cập nhật trạng thái mới nhất của bạn</p>
+          </div>
+          <button onClick={() => setTab("orders")}>
+            Xem tất cả <FontAwesomeIcon icon={["fas", "arrow-right"]} />
+          </button>
+        </div>
+        <OrderRows orders={orders.slice(0, 4)} openOrder={openOrder} />
+      </div>
+    </>
+  );
+}
+function Stat({ icon, label, value }) {
+  return (
+    <article>
+      <span>
+        <FontAwesomeIcon icon={["fas", icon]} />
+      </span>
+      <div>
+        <small>{label}</small>
+        <strong>{value}</strong>
+      </div>
+    </article>
+  );
+}
+function Title({ eyebrow, title, text }) {
+  return (
+    <header className="account-title">
+      <span>{eyebrow}</span>
+      <h2>{title}</h2>
+      <p>{text}</p>
+    </header>
+  );
+}
+function Badge({ code, name }) {
+  return (
+    <span className={`order-badge ${statusTone[code] || "gray"}`}>
+      {name || code}
+    </span>
+  );
+}
+function OrderRows({ orders, openOrder }) {
+  if (!orders.length)
+    return (
+      <div className="account-empty">
+        <FontAwesomeIcon icon={["fas", "box-open"]} />
+        <h3>Chưa có đơn hàng</h3>
+        <p>Sản phẩm bạn đặt sẽ xuất hiện tại đây.</p>
+        <Link to="/products">Khám phá sản phẩm</Link>
+      </div>
+    );
+  return (
+    <div className="order-list">
+      {orders.map((o) => (
+        <article key={o.id}>
+          <div className="order-icon">
+            <FontAwesomeIcon icon={["fas", "box"]} />
+          </div>
+          <div className="order-main">
+            <b>{o.code}</b>
+            <small>
+              {date(o.createdAt)} · {o.itemCount} sản phẩm
+            </small>
+          </div>
+          <Badge code={o.status} name={o.statusName} />
+          <div className="order-total">
+            <small>Thành tiền</small>
+            <b>{money(o.total)}</b>
+          </div>
+          <button onClick={() => openOrder(o.id)}>
+            Chi tiết <FontAwesomeIcon icon={["fas", "chevron-right"]} />
+          </button>
+        </article>
+      ))}
+    </div>
+  );
+}
+function Orders({ orders, openOrder }) {
+  const [filter, setFilter] = useState("ALL");
+  const filters = [
+      ["ALL", "Tất cả"],
+      ["PENDING", "Chờ xác nhận"],
+      ["SHIPPING", "Đang giao"],
+      ["DELIVERED", "Đã giao"],
+      ["CANCELLED", "Đã hủy"],
+    ],
+    shown =
+      filter === "ALL"
+        ? orders
+        : orders.filter((o) =>
+            filter === "SHIPPING"
+              ? ["CONFIRMED", "PACKING", "SHIPPING"].includes(o.status)
+              : o.status === filter,
+          );
+  return (
+    <>
+      <Title
+        eyebrow="ĐƠN HÀNG"
+        title="Lịch sử mua hàng"
+        text="Xem giá, thanh toán và hành trình của từng đơn."
+      />
+      <div className="order-filters">
+        {filters.map(([k, v]) => (
+          <button
+            className={filter === k ? "active" : ""}
+            onClick={() => setFilter(k)}
+            key={k}
+          >
+            {v}
+          </button>
+        ))}
+      </div>
+      <div className="account-panel">
+        <OrderRows orders={shown} openOrder={openOrder} />
+      </div>
+    </>
+  );
+}
+function Profile({ profile, api, onSaved }) {
+  const [form, setForm] = useState({
+      name: profile?.name || "",
+      email: profile?.email || "",
+      phone: profile?.phone || "",
+    }),
+    [saving, setSaving] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      onSaved(
+        await api("/account/profile", {
+          method: "PATCH",
+          body: JSON.stringify(form),
+        }),
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+  return (
+    <>
+      <Title
+        eyebrow="HỒ SƠ"
+        title="Thông tin cá nhân"
+        text="Thông tin này được dùng khi bạn đặt và nhận hàng."
+      />
+      <form className="account-form account-panel" onSubmit={submit}>
+        <div className="form-grid">
+          <Field
+            label="Họ và tên"
+            icon="user"
+            name="name"
+            value={form.name}
+            setForm={setForm}
+          />
+          <Field
+            label="Số điện thoại"
+            icon="phone"
+            name="phone"
+            value={form.phone}
+            setForm={setForm}
+          />
+          <Field
+            label="Email"
+            icon="envelope"
+            type="email"
+            name="email"
+            value={form.email}
+            setForm={setForm}
+          />
+          <Field
+            label="Thành viên từ"
+            icon="calendar-alt"
+            value={new Date(profile.createdAt).toLocaleDateString("vi-VN")}
+            disabled
+          />
+        </div>
+        <button className="account-primary" disabled={saving}>
+          <FontAwesomeIcon icon={["fas", "save"]} />{" "}
+          {saving ? "Đang lưu..." : "Lưu thay đổi"}
+        </button>
+      </form>
+    </>
+  );
+}
+function Field({
+  label,
+  icon,
+  name,
+  value,
+  setForm,
+  type = "text",
+  disabled = false,
+  placeholder,
+}) {
+  return (
+    <label className="account-field">
+      <span>{label}</span>
+      <div>
+        <FontAwesomeIcon icon={["fas", icon]} />
+        <input
+          type={type}
+          name={name}
+          value={value}
+          disabled={disabled}
+          placeholder={placeholder}
+          onChange={(e) =>
+            setForm && setForm((f) => ({ ...f, [name]: e.target.value }))
+          }
+        />
+      </div>
+    </label>
+  );
+}
+function Password({ api, notify }) {
+  const [form, setForm] = useState({
+      currentPassword: "",
+      newPassword: "",
+      confirm: "",
+    }),
+    [busy, setBusy] = useState(false);
+  const submit = async (e) => {
+    e.preventDefault();
+    if (form.newPassword !== form.confirm)
+      return notify("Mật khẩu xác nhận không khớp", "error");
+    setBusy(true);
+    try {
+      const r = await api("/account/password", {
+        method: "PATCH",
+        body: JSON.stringify({
+          currentPassword: form.currentPassword,
+          newPassword: form.newPassword,
+        }),
+      });
+      notify(r.message);
+      setForm({ currentPassword: "", newPassword: "", confirm: "" });
+    } catch (err) {
+      notify(err.message, "error");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <>
+      <Title
+        eyebrow="BẢO MẬT"
+        title="Thay đổi mật khẩu"
+        text="Dùng mật khẩu mạnh để bảo vệ tài khoản của bạn."
+      />
+      <form
+        className="account-form account-panel password-form"
+        onSubmit={submit}
+      >
+        <Field
+          label="Mật khẩu hiện tại"
+          icon="lock"
+          type="password"
+          name="currentPassword"
+          value={form.currentPassword}
+          setForm={setForm}
+        />
+        <Field
+          label="Mật khẩu mới"
+          icon="key"
+          type="password"
+          name="newPassword"
+          value={form.newPassword}
+          setForm={setForm}
+        />
+        <Field
+          label="Xác nhận mật khẩu mới"
+          icon="check-circle"
+          type="password"
+          name="confirm"
+          value={form.confirm}
+          setForm={setForm}
+        />
+        <p className="password-hint">
+          <FontAwesomeIcon icon={["fas", "info-circle"]} /> Ít nhất 10 ký tự,
+          gồm chữ hoa, chữ thường, số và ký tự đặc biệt.
+        </p>
+        <button className="account-primary" disabled={busy}>
+          Cập nhật mật khẩu
+        </button>
+      </form>
+    </>
+  );
+}
+function Addresses({ addresses, api, setAddresses, notify }) {
+  const blank = {
+    receiverName: "",
+    receiverPhone: "",
+    province: "",
+    district: "",
+    ward: "",
+    street: "",
+    isDefault: false,
+  };
+  const [editing, setEditing] = useState(null),
+    [form, setForm] = useState(blank);
+  const edit = (a) => {
+    setEditing(a.id);
+    setForm({ ...a, isDefault: Boolean(a.isDefault) });
+  };
+  const save = async (e) => {
+    e.preventDefault();
+    try {
+      const list = await api(
+        `/account/addresses${editing ? `/${editing}` : ""}`,
+        { method: editing ? "PATCH" : "POST", body: JSON.stringify(form) },
+      );
+      setAddresses(list);
+      setEditing(null);
+      setForm(blank);
+      notify("Đã lưu địa chỉ");
+    } catch (err) {
+      notify(err.message, "error");
+    }
+  };
+  const remove = async (id) => {
+    if (!window.confirm("Xóa địa chỉ này?")) return;
+    await api(`/account/addresses/${id}`, { method: "DELETE" });
+    setAddresses((a) => a.filter((x) => x.id !== id));
+    notify("Đã xóa địa chỉ");
+  };
+  return (
+    <>
+      <Title
+        eyebrow="GIAO HÀNG"
+        title="Sổ địa chỉ"
+        text="Lưu địa chỉ để đặt hàng nhanh hơn trong lần sau."
+      />
+      <div className="address-grid">
+        {addresses.map((a) => (
+          <article className="address-card" key={a.id}>
+            {Boolean(a.isDefault) && <em>Mặc định</em>}
+            <span>
+              <FontAwesomeIcon icon={["fas", "map-marker-alt"]} />
+            </span>
+            <h3>{a.receiverName}</h3>
+            <b>{a.receiverPhone}</b>
+            <p>
+              {a.street}, {a.ward}, {a.district}, {a.province}
+            </p>
+            <div>
+              <button onClick={() => edit(a)}>
+                <FontAwesomeIcon icon={["fas", "edit"]} /> Sửa
+              </button>
+              <button onClick={() => remove(a.id)}>
+                <FontAwesomeIcon icon={["fas", "trash"]} /> Xóa
+              </button>
+            </div>
+          </article>
+        ))}
+      </div>
+      <form className="account-form account-panel address-form" onSubmit={save}>
+        <div className="panel-head">
+          <div>
+            <h3>{editing ? "Chỉnh sửa địa chỉ" : "Thêm địa chỉ mới"}</h3>
+            <p>Điền đầy đủ để giao hàng chính xác.</p>
+          </div>
+          {editing && (
+            <button
+              type="button"
+              onClick={() => {
+                setEditing(null);
+                setForm(blank);
+              }}
+            >
+              Hủy sửa
+            </button>
+          )}
+        </div>
+        <div className="form-grid">
+          <Field
+            label="Người nhận"
+            icon="user"
+            name="receiverName"
+            value={form.receiverName}
+            setForm={setForm}
+          />
+          <Field
+            label="Số điện thoại"
+            icon="phone"
+            name="receiverPhone"
+            value={form.receiverPhone}
+            setForm={setForm}
+          />
+          <Field
+            label="Tỉnh / Thành phố"
+            icon="city"
+            name="province"
+            value={form.province}
+            setForm={setForm}
+          />
+          <Field
+            label="Quận / Huyện"
+            icon="building"
+            name="district"
+            value={form.district}
+            setForm={setForm}
+          />
+          <Field
+            label="Phường / Xã"
+            icon="map"
+            name="ward"
+            value={form.ward}
+            setForm={setForm}
+          />
+          <Field
+            label="Số nhà, tên đường"
+            icon="home"
+            name="street"
+            value={form.street}
+            setForm={setForm}
+          />
+        </div>
+        <label className="default-check">
+          <input
+            type="checkbox"
+            checked={form.isDefault}
+            onChange={(e) =>
+              setForm((f) => ({ ...f, isDefault: e.target.checked }))
+            }
+          />{" "}
+          Đặt làm địa chỉ mặc định
+        </label>
+        <button className="account-primary">Lưu địa chỉ</button>
+      </form>
+    </>
+  );
+}
+function OrderDetail({ order, close, cancel }) {
+  return (
+    <div
+      className="order-modal"
+      onMouseDown={(e) => e.target === e.currentTarget && close()}
+    >
+      <section>
+        <header>
+          <div>
+            <span>CHI TIẾT ĐƠN HÀNG</span>
+            <h2>{order.code}</h2>
+            <p>Đặt lúc {date(order.createdAt)}</p>
+          </div>
+          <button onClick={close}>×</button>
+        </header>
+        <div className="order-modal-status">
+          <Badge code={order.status} name={order.statusName} />
+          <Badge code={order.paymentStatus} name={order.paymentStatusName} />
+        </div>
+        <div className="detail-products">
+          {order.items.map((i) => (
+            <article key={`${i.productId}-${i.variantName || ""}`}>
+              <div className="detail-image">
+                {i.image ? (
+                  <img src={i.image} alt="" />
+                ) : (
+                  <FontAwesomeIcon icon={["fas", "image"]} />
+                )}
+              </div>
+              <div>
+                <Link to={`/products/${i.slug}`}>{i.name}</Link>
+                <small>
+                  {i.variantName || "Phiên bản tiêu chuẩn"} · SL: {i.quantity}
+                </small>
+              </div>
+              <b>{money(i.unitPrice)}</b>
+              <strong>{money(i.lineTotal)}</strong>
+            </article>
+          ))}
+        </div>
+        <div className="detail-grid">
+          <div>
+            <h3>
+              <FontAwesomeIcon icon={["fas", "map-marker-alt"]} /> Địa chỉ nhận
+              hàng
+            </h3>
+            <b>
+              {order.receiverName} · {order.receiverPhone}
+            </b>
+            <p>
+              {order.street}, {order.ward}, {order.district}, {order.province}
+            </p>
+          </div>
+          <div>
+            <h3>
+              <FontAwesomeIcon icon={["fas", "credit-card"]} /> Thanh toán
+            </h3>
+            <b>{order.paymentMethodName}</b>
+            <p>{order.paymentStatusName}</p>
+          </div>
+        </div>
+        <footer>
+          <div>
+            <span>Tổng thanh toán</span>
+            <strong>{money(order.total)}</strong>
+          </div>
+          {["PENDING", "CONFIRMED"].includes(order.status) && (
+            <button className="cancel-order" onClick={cancel}>
+              Hủy đơn hàng
+            </button>
+          )}
+          <button onClick={close}>Đóng</button>
+        </footer>
+      </section>
+    </div>
+  );
+}

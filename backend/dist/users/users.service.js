@@ -110,6 +110,28 @@ let UsersService = class UsersService {
         await this.dataSource.query(`DELETE FROM users WHERE user_id = ?`, [id]);
         return { success: true, message: 'Đã xóa người dùng thành công' };
     }
+    async getAddresses(userId) {
+        const addresses = await this.dataSource.query(`SELECT address_id, receiver_name, receiver_phone, province_name, district_name, ward_name, street_address, is_default 
+       FROM user_addresses WHERE user_id = ? ORDER BY is_default DESC, address_id DESC`, [userId]);
+        return { success: true, data: addresses };
+    }
+    async createAddress(userId, dto) {
+        if (dto.is_default) {
+            await this.dataSource.query(`UPDATE user_addresses SET is_default = FALSE WHERE user_id = ?`, [userId]);
+        }
+        await this.dataSource.query(`INSERT INTO user_addresses (user_id, receiver_name, receiver_phone, province_name, district_name, ward_name, street_address, is_default) 
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?)`, [
+            userId,
+            dto.receiver_name,
+            dto.receiver_phone,
+            dto.province_name || 'Hà Nội',
+            dto.district_name || 'N/A',
+            dto.ward_name || 'N/A',
+            dto.street_address,
+            dto.is_default ? true : false,
+        ]);
+        return { success: true, message: 'Thêm địa chỉ thành công' };
+    }
 };
 exports.UsersService = UsersService;
 exports.UsersService = UsersService = __decorate([

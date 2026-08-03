@@ -23,4 +23,12 @@ export declare class UsersService {
         success: boolean;
         message: string;
     }>;
+    getAddresses(userId: number): Promise<{
+        success: boolean;
+        data: any;
+    }>;
+    createAddress(userId: number, dto: any): Promise<{
+        success: boolean;
+        message: string;
+    }>;
 }

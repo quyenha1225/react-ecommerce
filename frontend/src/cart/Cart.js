@@ -36,10 +36,8 @@ function Cart() {
     };
   }, []);
 
-  // Danh sách các sản phẩm được tích chọn (selected !== false)
   const selectedProducts = products.filter((item) => item.selected !== false);
 
-  // Tính tổng tiền CHỈ cho những sản phẩm được tích chọn
   const total = selectedProducts.reduce(
     (sum, item) => sum + item.price * item.quantity,
     0,
@@ -102,7 +100,9 @@ function Cart() {
                   }
 
                   if (!session) {
-                    alert("Vui lòng đăng nhập để đặt hàng và theo dõi đơn trong tài khoản.");
+                    alert(
+                      "Vui lòng đăng nhập để đặt hàng và theo dõi đơn trong tài khoản.",
+                    );
                     return;
                   }
 
@@ -137,11 +137,18 @@ function Cart() {
             products={selectedProducts}
             onBack={() => setStep(2)}
             onFinish={(order) => {
+              const orderAmount = Number(
+                order?.totalAmount ||
+                  order?.amount ||
+                  order?.total_amount ||
+                  order?.total ||
+                  total,
+              );
               setCompletedOrder(order);
-              setFinalTotal(total); // Lưu lại tổng tiền trước khi xoá giỏ hàng
+              setFinalTotal(orderAmount || total);
+              setStep(4);
               clearCart();
               setProducts([]);
-              setStep(4);
             }}
           />
         )}

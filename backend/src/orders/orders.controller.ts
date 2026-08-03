@@ -15,7 +15,13 @@ import { JwtAuthGuard } from '../security/jwt-auth.guard';
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
-  // Checkout công khai (tự nhận diện userId từ token nếu có, hoặc dùng ID 1 mặc định)
+  // Tiếp nhận cả route /orders và /orders/checkout để không bao giờ dính lỗi 404
+  @Post()
+  async checkoutBase(@Request() req, @Body() createOrderDto: CreateOrderDto) {
+    const userId = req.user?.id || 1;
+    return await this.ordersService.checkout(userId, createOrderDto);
+  }
+
   @Post('checkout')
   async checkout(@Request() req, @Body() createOrderDto: CreateOrderDto) {
     const userId = req.user?.id || 1;

@@ -1,20 +1,27 @@
-import { useState, useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
 function SePayQRModal({ show, orderData, onClose, onSuccess }) {
-  const orderId = orderData?.id || orderData?.orderId;
-  const orderCode = orderData?.orderCode || orderData?.code;
+  const orderId = orderData?.order_id || orderData?.id || orderData?.orderId;
+  const orderCode =
+    orderData?.order_code ||
+    orderData?.orderCode ||
+    orderData?.code ||
+    (orderId ? `ESH${orderId}` : "");
+
   const amount = Number(
-    orderData?.totalAmount || orderData?.amount || orderData?.total || 0,
+    orderData?.total_amount ||
+      orderData?.totalAmount ||
+      orderData?.amount ||
+      orderData?.total ||
+      0,
   );
 
-  // Thêm chữ "SEVQR " vào trước mã đơn hàng để VietinBank/SePay kích hoạt webhook
-  const rawCode = orderCode || `ESH${orderId}`;
+  const rawCode = orderCode || (orderId ? `ESH${orderId}` : "");
   const transferContent = rawCode.startsWith("SEVQR")
     ? rawCode
     : `SEVQR ${rawCode}`;
 
-  // Cấu hình VietinBank với số tài khoản của bạn
   const bank = {
     name: "VietinBank",
     account: "101886339075",
@@ -23,36 +30,53 @@ function SePayQRModal({ show, orderData, onClose, onSuccess }) {
     code: transferContent,
   };
 
-  // URL tạo QR chuẩn VietinBank theo yêu cầu của SePay kèm tiền tố SEVQR
-  const qr = `https://qr.sepay.vn/img?bank=VietinBank&acc=${bank.account}&template=compact&amount=${bank.amount}&des=${encodeURIComponent(bank.code)}`;
+  // 🌟 API VIETQR NAPAS247 CHÍNH CHỦ
+  const qr = `https://img.vietqr.io/image/VietinBank-${bank.account}-compact.png?amount=${bank.amount}&addInfo=${encodeURIComponent(bank.code)}&accountName=${encodeURIComponent(bank.owner)}`;
 
-  // 🔄 CƠ CHẾ POLLING TỰ ĐỘNG KIỂM TRA THANH TOÁN QUA SEPAY WEBHOOK
+  const onSuccessRef = useRef(onSuccess);
   useEffect(() => {
-    if (!show || !orderId) return;
+    onSuccessRef.current = onSuccess;
+  }, [onSuccess]);
+
+  // 🔄 POLLING CẬP NHẬT ĐƯỜNG DẪN API DOMAIN MỚI
+  useEffect(() => {
+    if (!show) return;
+
+    const checkTarget = orderId || orderCode || rawCode;
+    if (!checkTarget) return;
+
+    // Tự động nhận diện Domain công khai hoặc môi trường dev
+    const API_BASE_URL =
+      process.env.REACT_APP_API_URL || "https://congnghexin.click/api";
 
     let isMounted = true;
     const interval = setInterval(async () => {
       try {
         const res = await fetch(
-          `http://localhost:3001/api/payments/status/${orderId}`,
+          `${API_BASE_URL}/payments/status/${checkTarget}`,
         );
         const data = await res.json();
 
         if (isMounted && data && data.isPaid) {
           clearInterval(interval);
           localStorage.setItem("payment-method", "sepay");
-          onSuccess(orderData); // Tự động chuyển trang khi SePay webhook gửi tín hiệu thành công về!
+
+          setTimeout(() => {
+            if (onSuccessRef.current) {
+              onSuccessRef.current(orderData);
+            }
+          }, 100);
         }
       } catch (err) {
         console.error("Lỗi kiểm tra trạng thái thanh toán:", err);
       }
-    }, 3000); // Kiểm tra mỗi 3 giây
+    }, 2000);
 
     return () => {
       isMounted = false;
       clearInterval(interval);
     };
-  }, [show, orderId, orderData, onSuccess]);
+  }, [show, orderId, orderCode, rawCode, orderData]);
 
   if (!show || !orderData) return null;
 

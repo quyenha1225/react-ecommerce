@@ -23,16 +23,24 @@ let UsersController = class UsersController {
         this.usersService = usersService;
     }
     getProfile(req) {
-        const userId = req.user.userId || req.user.sub;
+        const userId = req.user.id;
         return this.usersService.findOne(userId);
     }
     updateProfile(req, dto) {
-        const userId = req.user.userId || req.user.sub;
+        const userId = req.user.id;
         return this.usersService.updateProfile(userId, dto);
     }
     changePassword(req, dto) {
-        const userId = req.user.userId || req.user.sub;
+        const userId = req.user.id;
         return this.usersService.changePassword(userId, dto);
+    }
+    getAddresses(req) {
+        const userId = req.user.id;
+        return this.usersService.getAddresses(userId);
+    }
+    createAddress(req, dto) {
+        const userId = req.user.id;
+        return this.usersService.createAddress(userId, dto);
     }
     findAll() {
         return this.usersService.findAll();
@@ -68,6 +76,21 @@ __decorate([
     __metadata("design:paramtypes", [Object, update_user_dto_1.ChangePasswordDto]),
     __metadata("design:returntype", void 0)
 ], UsersController.prototype, "changePassword", null);
+__decorate([
+    (0, common_1.Get)('addresses'),
+    __param(0, (0, common_1.Req)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object]),
+    __metadata("design:returntype", void 0)
+], UsersController.prototype, "getAddresses", null);
+__decorate([
+    (0, common_1.Post)('addresses'),
+    __param(0, (0, common_1.Req)()),
+    __param(1, (0, common_1.Body)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, Object]),
+    __metadata("design:returntype", void 0)
+], UsersController.prototype, "createAddress", null);
 __decorate([
     (0, common_1.Get)(),
     __metadata("design:type", Function),

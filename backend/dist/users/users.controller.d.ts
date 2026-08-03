@@ -15,6 +15,14 @@ export declare class UsersController {
         success: boolean;
         message: string;
     }>;
+    getAddresses(req: any): Promise<{
+        success: boolean;
+        data: any;
+    }>;
+    createAddress(req: any, dto: any): Promise<{
+        success: boolean;
+        message: string;
+    }>;
     findAll(): Promise<{
         success: boolean;
         data: any;

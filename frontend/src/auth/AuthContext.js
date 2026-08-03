@@ -1,4 +1,5 @@
 import { createContext, useContext, useEffect, useMemo, useState } from "react";
+import { mergeGuestCartToUser } from "../utils/cartStorage";
 
 const AuthContext = createContext(null);
 const API = process.env.REACT_APP_API_URL || "http://localhost:3001/api";
@@ -16,23 +17,28 @@ export function AuthProvider({ children }) {
   useEffect(() => {
     let active = true;
     fetch(`${API}/auth/me`, { credentials: "include" })
-      .then(async response => {
+      .then(async (response) => {
         if (!response.ok) throw new Error("No active session");
         return response.json();
       })
-      .then(data => {
+      .then((data) => {
         if (!active) return;
         const restored = { success: true, user: data.user };
         localStorage.setItem("eshop_session", JSON.stringify(restored));
         setSession(restored);
+        mergeGuestCartToUser();
       })
       .catch(() => {
         if (!active) return;
         localStorage.removeItem("eshop_session");
         setSession(null);
       })
-      .finally(() => { if (active) setAuthReady(true); });
-    return () => { active = false; };
+      .finally(() => {
+        if (active) setAuthReady(true);
+      });
+    return () => {
+      active = false;
+    };
   }, []);
 
   const request = async (path, payload) => {
@@ -53,7 +59,6 @@ export function AuthProvider({ children }) {
       );
     }
 
-    // Chuẩn hóa thông tin User để đảm bảo luôn lưu SĐT (phone/phone_number/phoneNumber)
     const userObj = data.user || data.data || data;
     const formattedSession = {
       ...data,
@@ -78,18 +83,21 @@ export function AuthProvider({ children }) {
 
     localStorage.setItem("eshop_session", JSON.stringify(formattedSession));
     setSession(formattedSession);
+
+    mergeGuestCartToUser();
+
     return formattedSession;
   };
 
-  // Hàm xử lý Đăng xuất triệt để
   const logout = () => {
-    fetch(`${API}/auth/logout`, { method: "POST", credentials: "include" }).catch(() => {});
+    fetch(`${API}/auth/logout`, {
+      method: "POST",
+      credentials: "include",
+    }).catch(() => {});
     localStorage.removeItem("eshop_session");
     localStorage.removeItem("customer-info");
     localStorage.removeItem("payment-method");
     setSession(null);
-
-    // Chuyển về trang chủ và làm mới ứng dụng để reset toàn bộ Modal / State
     window.location.href = "/";
   };
 

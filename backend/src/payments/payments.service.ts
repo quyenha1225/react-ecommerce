@@ -10,7 +10,6 @@ import { DataSource } from 'typeorm';
 export class PaymentsService {
   constructor(private dataSource: DataSource) {}
 
-  // 1. TẠO QR SEPAY DỰA TRÊN ORDER_ID (ĐÃ FIX ĐÚNG THÔNG TIN VIETINBANK & CÚ PHÁP SEVQR)
   async getSePayQrUrl(orderId: number, userId: number) {
     const orders = await this.dataSource.query(
       `SELECT o.order_id, o.order_code, 
@@ -29,14 +28,10 @@ export class PaymentsService {
       );
     }
 
-    // Cố định thông tin VietinBank và số tài khoản chính xác của bạn
     const bankAccount = '101886339075';
     const bankName = 'VietinBank';
     const amount = Math.round(Number(order.total_amount) || 0);
-
     const orderCode = order.order_code || `ESH${order.order_id}`;
-
-    // BẮT BUỘC PHẢI CÓ CHỮ "SEVQR" Ở ĐẦU ĐỂ VIETINBANK VÀ SEPAY NHẬN DIỆN WEBHOOK
     const description = `SEVQR ${orderCode}`;
 
     const qrUrl = `https://qr.sepay.vn/img?bank=${bankName}&acc=${bankAccount}&template=compact&amount=${amount}&des=${encodeURIComponent(description)}`;
@@ -50,25 +45,27 @@ export class PaymentsService {
     };
   }
 
-  // 2. KIỂM TRA TRẠNG THÁI CHO FRONTEND POLLING (MATCH CHÍNH XÁC ĐƠN HIỆN TẠI)
   async checkPaymentStatus(orderId: string | number) {
-    const rawId = String(orderId);
+    const rawId = String(orderId).trim();
+
+    // Trích xuất số ID nếu client truyền dạng "90" hoặc "ESH90" hoặc "ESH17855..."
+    const match = rawId.match(/ESH(\d+)/i);
+    const searchParam = match ? match[0] : rawId;
 
     const orders = await this.dataSource.query(
       `SELECT ps.payment_status_code 
        FROM orders o 
        LEFT JOIN payments p ON p.order_id = o.order_id 
        LEFT JOIN payment_statuses ps ON ps.payment_status_id = p.payment_status_id 
-       WHERE o.order_id = ? OR o.order_code = ? OR o.order_code = ? 
-       LIMIT 1`,
-      [rawId, rawId, `ESH${rawId}`],
+       WHERE o.order_id = ? OR o.order_code = ? OR o.order_code LIKE ? 
+       ORDER BY o.order_id DESC LIMIT 1`,
+      [!isNaN(Number(rawId)) ? Number(rawId) : -1, searchParam, `%${searchParam}%`],
     );
 
     const isPaid = orders[0]?.payment_status_code === 'PAID';
     return { success: true, isPaid };
   }
 
-  // 3. XỬ LÝ WEBHOOK TỰ ĐỘNG TỪ SEPAY
   async processSepayWebhook(data: any) {
     console.log('=== SEPAY WEBHOOK DATA RECEIVE ===', data);
     const content = data?.content || data?.description || '';
@@ -76,22 +73,18 @@ export class PaymentsService {
     if (!content)
       return { success: false, message: 'Nội dung chuyển khoản rỗng' };
 
-    // Trích xuất chuỗi số đằng sau chữ ESH (Ví dụ: SEVQR ESH1785076777742 -> bắt được ESH và số phía sau)
     const match = content.match(/ESH(\d+)/i);
-    const orderCodeFromContent = match ? `ESH${match[1]}` : null;
-
     let orderToUpdate: any = null;
 
-    // A. Tìm chính xác đơn hàng theo order_code hoặc order_id
-    if (orderCodeFromContent) {
+    if (match && match[0]) {
+      const fullCode = match[0];
       const orders = await this.dataSource.query(
-        `SELECT order_id FROM orders WHERE order_code = ? OR order_code = ? LIMIT 1`,
-        [orderCodeFromContent, match[1]],
+        `SELECT order_id FROM orders WHERE order_code = ? OR order_code LIKE ? OR order_id = ? LIMIT 1`,
+        [fullCode, `%${match[1]}%`, match[1]],
       );
       orderToUpdate = orders[0];
     }
 
-    // B. Nếu không tìm thấy chính xác theo mã ESH, lấy đơn PENDING/UNPAID gần nhất
     if (!orderToUpdate) {
       const pendingOrders = await this.dataSource.query(
         `SELECT o.order_id 
@@ -104,11 +97,9 @@ export class PaymentsService {
       orderToUpdate = pendingOrders[0];
     }
 
-    // C. Cập nhật trạng thái sang PAID cho đơn hàng
     if (orderToUpdate) {
       const orderId = orderToUpdate.order_id;
 
-      // Cập nhật bảng payments -> PAID
       await this.dataSource.query(
         `UPDATE payments 
          SET payment_status_id = (SELECT payment_status_id FROM payment_statuses WHERE payment_status_code = 'PAID' LIMIT 1),
@@ -117,7 +108,6 @@ export class PaymentsService {
         [orderId],
       );
 
-      // Cập nhật bảng orders -> CONFIRMED
       await this.dataSource.query(
         `UPDATE orders 
          SET order_status_id = (SELECT order_status_id FROM order_statuses WHERE order_status_code = 'CONFIRMED' LIMIT 1) 
@@ -138,7 +128,6 @@ export class PaymentsService {
     return { success: false, message: 'Không tìm thấy đơn hàng cần cập nhật' };
   }
 
-  // 4. MOCK THANH TOÁN THỦ CÔNG (DỰ PHÒNG)
   async mockSuccess(orderId: number, userId: number) {
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
@@ -160,8 +149,6 @@ export class PaymentsService {
         throw new ForbiddenException(
           'Bạn không có quyền thao tác trên đơn hàng này',
         );
-      if (order.payment_status_code === 'PAID')
-        throw new BadRequestException('Đơn hàng đã được thanh toán trước đó');
 
       const paidStatuses = await queryRunner.query(
         `SELECT payment_status_id FROM payment_statuses WHERE payment_status_code = 'PAID' LIMIT 1`,
